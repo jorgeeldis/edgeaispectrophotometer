@@ -1,3 +1,5 @@
+#include <Arduino.h>
+#line 1 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
 // SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
 //
 // SPDX-License-Identifier: MPL-2.0
@@ -5,6 +7,15 @@
 #include <Arduino_RouterBridge.h>
 
 // Led 3 can be controlled via PWM pins
+#line 8 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
+void set_led3_color(int r, int g, int b);
+#line 15 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
+void set_led4_color(bool r, bool g, bool b);
+#line 21 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
+void setup();
+#line 36 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
+void loop();
+#line 8 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
 void set_led3_color(int r, int g, int b) {
   analogWrite(LED3_R, r);
   analogWrite(LED3_G, g);
@@ -34,3 +45,4 @@ void setup()
 }
 
 void loop() {}
+

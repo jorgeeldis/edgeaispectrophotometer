@@ -1,15 +1,6 @@
-manifest_version: "1"
-name: "edge-ai-spectrophotometer"
-version: "1.0.0"
-
-# Import pre-built App Lab Bricks
+name: edge-ai-spectrophotometer
+description: ""
+ports: []
 bricks:
-  web_ui:
-    type: "arduino/webui-html"
-  #ai_model:
-  #  type: "arduino/image-classification" # Can be switched to object-detection or custom edge-impulse model
-
-# Execution endpoints
-entrypoints:
-  python: "python/main.py"
-  sketch: "sketch/sketch.ino"
+- arduino:web_ui: {}
+icon: 🧬

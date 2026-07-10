@@ -1,36 +1,40 @@
-import time
-from arduino_app_lab import Bridge # Middleware for MCU communication
-from arduino_bricks import web_ui, ai_model # Accessing injected Bricks
+# SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
+#
+# SPDX-License-Identifier: MPL-2.0
 
-def on_hardware_trigger(sensor_value):
-    #print(f"Sensor threshold hit: {sensor_value}. Running AI Analysis...")
-    
-    # 1. Grab data/frame from the AI Brick (e.g., camera feed or data arrays)
-    #inference = ai_model.get_latest_inference() 
-    
-    # Example structure: {"label": "Equipment_A", "confidence": 0.94}
-    #classification = inference.get("label", "Unknown")
-    #confidence = inference.get("confidence", 0.0)
+from arduino.app_utils import *
+from arduino.app_bricks.web_ui import WebUI
 
-    # 2. Package data for the Web Interface
-    payload = {
-        "sensor_reading": 1,
-        "ai_result": 2,
-        "confidence": 3,
-        "timestamp": time.strftime("%H:%M:%S")
-    }
-    
-    # 3. Stream data to the frontend Web UI
-    web_ui.emit("data_update", payload)
+ui = WebUI()
 
-def main():
-    print("AI Data Analyzer Pipeline Starting...")
-    
-    # Listen to data variables shared by the real-time C++ MCU sketch
-    Bridge.register_callback("raw_sensor_event", on_hardware_trigger)
-    
-    while True:
-        time.sleep(1)
+def on_set_color(id, message: dict):
+    ledid = message.get("led")
+    rgb_color = message.get("color")
+    # Led 1 and 2 are controlled by directly (MPU), while Led 3 and 4 are controlled via Bridge (MCU)
+    try:
+        if ledid not in (1, 2, 3, 4):
+            raise ValueError(f"Unknown led '{ledid}'")
 
-if __name__ == "__main__":
-    main()
+        if not rgb_color or not all(k in rgb_color for k in ("r", "g", "b")):
+            raise ValueError("Color must be an object with 'r', 'g', 'b' keys")
+
+        match ledid:
+            case 1:
+                Leds.set_led1_color(rgb_color["r"] != 0, rgb_color["g"] != 0, rgb_color["b"] != 0)
+            case 2:
+                Leds.set_led2_color(rgb_color["r"] != 0, rgb_color["g"] != 0, rgb_color["b"] != 0)
+            case 3:
+                Bridge.call("set_led3_color", rgb_color["r"], rgb_color["g"], rgb_color["b"])
+            case 4:
+                Bridge.call("set_led4_color", rgb_color["r"] != 0, rgb_color["g"] != 0, rgb_color["b"] != 0)
+
+    except Exception as e:
+        ui.send_message("error", f"LED color set error: {e}")
+
+#Initialize LEDs to off state (only 1 and 2 here, 3 and 4 will be set in MCU setup)
+on_set_color(1, {"led": 1, "color": {"r": 0, "g": 0, "b": 0}})
+on_set_color(2, {"led": 2, "color": {"r": 0, "g": 0, "b": 0}})
+
+ui.on_message("set_color", on_set_color)
+
+App.run()

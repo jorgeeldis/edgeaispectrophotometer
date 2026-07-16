@@ -408,3 +408,46 @@ input:checked + .slider:before {
   top: 90px;
   left: 578px;
 }
+
+/* Layout for the tab buttons */
+.tab-menu {
+  display: flex;
+  border-bottom: 2px solid #ccc;
+  gap: 10px;
+  width: 720px;
+}
+
+/* Individual tab button styling */
+.tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background-color: #f1f1f1;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 5px 5px 0 0;
+  transition: 0.3s;
+}
+
+/* Hover effect on buttons */
+.tab-btn:hover {
+  background-color: #ddd;
+}
+
+/* Styling for the active tab button */
+.tab-btn.active {
+  background-color: #007BFF;
+  color: white;
+}
+
+/* Hide all panels by default */
+.tab-panel {
+  display: none;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
+/* Only display the panel with the active class */
+.tab-panel.active {
+  display: block;
+}

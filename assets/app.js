@@ -2,8 +2,89 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-const ui = new WebUI();
-ui.on_connect(onUIConnected);
+TESTER = document.getElementById('tester');
+
+Plotly.newPlot( TESTER, [{
+x: [1, 2, 3, 4, 5],
+y: [1, 2, 4, 8, 16] }], {
+ margin: { t: 20, l: 20, r: 20, b: 20 },
+ title: 'Spectrophotometer Scan Preview',
+ xaxis: { title: 'Wavelength' },
+ yaxis: { title: 'Intensity' }
+ } );
+
+const baselineBtn = document.getElementById('baseline-btn');
+const singleScanBtn = document.getElementById('single-scan-btn');
+const continuousBtn = document.getElementById('continuous-btn');
+let continuousInterval = null;
+
+baselineBtn?.addEventListener('click', startBaseline);
+singleScanBtn?.addEventListener('click', startSingleScan);
+continuousBtn?.addEventListener('click', toggleContinuousScan);
+
+function startBaseline() {
+  console.log('Baseline scan started');
+  Plotly.react(TESTER, [{
+    x: [1, 2, 3, 4, 5],
+    y: [2, 2, 2, 2, 2],
+    type: 'scatter',
+    mode: 'lines+markers',
+    name: 'Baseline'
+  }], {
+    margin: { t: 20, l: 20, r: 20, b: 20 },
+    title: 'Baseline Scan',
+    xaxis: { title: 'Wavelength' },
+    yaxis: { title: 'Intensity' }
+  });
+}
+
+function startSingleScan() {
+  console.log('Single scan started');
+  Plotly.react(TESTER, [{
+    x: [1, 2, 3, 4, 5],
+    y: [1, 3, 5, 4, 6],
+    type: 'scatter',
+    mode: 'lines+markers',
+    name: 'Single Scan'
+  }], {
+    margin: { t: 20, l: 20, r: 20, b: 20 },
+    title: 'Single Scan',
+    xaxis: { title: 'Wavelength' },
+    yaxis: { title: 'Intensity' }
+  });
+}
+
+function toggleContinuousScan() {
+  if (continuousInterval) {
+    stopContinuousScan();
+    return;
+  }
+
+  console.log('Continuous scan started');
+  continuousBtn.textContent = 'STOP CONTINUOUS';
+  continuousInterval = setInterval(() => {
+    const nextY = Array.from({ length: 5 }, () => Math.round(Math.random() * 10) + 1);
+    Plotly.react(TESTER, [{
+      x: [1, 2, 3, 4, 5],
+      y: nextY,
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: 'Continuous Scan'
+    }], {
+      margin: { t: 20, l: 20, r: 20, b: 20 },
+      title: 'Continuous Scan',
+      xaxis: { title: 'Wavelength' },
+      yaxis: { title: 'Intensity' }
+    });
+  }, 1000);
+}
+
+function stopContinuousScan() {
+  console.log('Continuous scan stopped');
+  clearInterval(continuousInterval);
+  continuousInterval = null;
+  continuousBtn.textContent = 'CONTINUOUS SCAN';
+}
 ui.on_disconnect(onUIDisconnected);
 
 const OFF_COLOR = '#DAE3E3';
@@ -156,3 +237,18 @@ function hexToRgb(hex) {
   const b = parseInt(hex.slice(5, 7), 16) || 0;
   return { r, g, b };
 }
+
+function switchTab(event, tabId) {
+  // Hide all content panels
+  const panels = document.querySelectorAll('.tab-panel');
+  panels.forEach(panel => panel.classList.remove('active'));
+
+  // Remove the active class from all buttons
+  const buttons = document.querySelectorAll('.tab-btn');
+  buttons.forEach(btn => btn.classList.remove('active'));
+
+  // Show the specific clicked panel and mark button as active
+  document.getElementById(tabId).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+

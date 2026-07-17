@@ -1,16 +1,23 @@
 // SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
 //
 // SPDX-License-Identifier: MPL-2.0
-
 TESTER = document.getElementById('tester');
 
+ // Mock wavelengths (nm) - 14 channels from AS7343
+const wavelengths = [380, 395, 410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705];
+
+// Mock absorbance (dB) - simulated spectral response
+const absorbance = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.48, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2];
+
+const absorbanceBaseline = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.48, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2];
+
 Plotly.newPlot( TESTER, [{
-x: [1, 2, 3, 4, 5],
-y: [1, 2, 4, 8, 16] }], {
- margin: { t: 20, l: 20, r: 20, b: 20 },
+x: wavelengths,
+y: absorbance }], {
+ margin: { t: 20, l: 30, r: 20, b: 20 },
  title: 'Spectrophotometer Scan Preview',
- xaxis: { title: 'Wavelength' },
- yaxis: { title: 'Intensity' }
+ xaxis: { title: 'Wavelength (nm)' },
+ yaxis: { title: 'Absorbance (dB)' }
  } );
 
 const baselineBtn = document.getElementById('baseline-btn');
@@ -25,13 +32,13 @@ continuousBtn?.addEventListener('click', toggleContinuousScan);
 function startBaseline() {
   console.log('Baseline scan started');
   Plotly.react(TESTER, [{
-    x: [1, 2, 3, 4, 5],
-    y: [2, 2, 2, 2, 2],
+    x: wavelengths,
+    y: absorbanceBaseline,
     type: 'scatter',
     mode: 'lines+markers',
     name: 'Baseline'
   }], {
-    margin: { t: 20, l: 20, r: 20, b: 20 },
+    margin: { t: 20, l: 30, r: 20, b: 20 },
     title: 'Baseline Scan',
     xaxis: { title: 'Wavelength' },
     yaxis: { title: 'Intensity' }
@@ -41,13 +48,13 @@ function startBaseline() {
 function startSingleScan() {
   console.log('Single scan started');
   Plotly.react(TESTER, [{
-    x: [1, 2, 3, 4, 5],
-    y: [1, 3, 5, 4, 6],
+    x: wavelengths,
+    y: absorbance,
     type: 'scatter',
     mode: 'lines+markers',
     name: 'Single Scan'
   }], {
-    margin: { t: 20, l: 20, r: 20, b: 20 },
+    margin: { t: 20, l: 30, r: 20, b: 20 },
     title: 'Single Scan',
     xaxis: { title: 'Wavelength' },
     yaxis: { title: 'Intensity' }
@@ -63,19 +70,8 @@ function toggleContinuousScan() {
   console.log('Continuous scan started');
   continuousBtn.textContent = 'STOP CONTINUOUS';
   continuousInterval = setInterval(() => {
-    const nextY = Array.from({ length: 5 }, () => Math.round(Math.random() * 10) + 1);
-    Plotly.react(TESTER, [{
-      x: [1, 2, 3, 4, 5],
-      y: nextY,
-      type: 'scatter',
-      mode: 'lines+markers',
-      name: 'Continuous Scan'
-    }], {
-      margin: { t: 20, l: 20, r: 20, b: 20 },
-      title: 'Continuous Scan',
-      xaxis: { title: 'Wavelength' },
-      yaxis: { title: 'Intensity' }
-    });
+    const nextY = absorbance.map(v => v + (Math.random() - 0.5) * 0.05);
+    Plotly.restyle('tester', { y: [nextY] }, 0);
   }, 1000);
 }
 

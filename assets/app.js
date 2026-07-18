@@ -3,84 +3,191 @@
 // SPDX-License-Identifier: MPL-2.0
 TESTER = document.getElementById('tester');
 
- // Mock wavelengths (nm) - 14 channels from AS7343
+// Mock wavelengths (nm) - 14 channels from AS7343
 const wavelengths = [380, 395, 410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705];
 
-// Mock absorbance (dB) - simulated spectral response
-const absorbance = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.48, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2];
+const scanState = {
+  baseline: null, // dark-reference reading, per channel
+  lastScan: null, // { raw, absorbance, timestamp }
+  continuousInterval: null,
+};
 
-const absorbanceBaseline = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.48, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2];
+const scanSettings = {
+  integrationTimeMs: 100,
+  gain: 1,
+  averaging: 1,
+};
 
-Plotly.newPlot( TESTER, [{
-x: wavelengths,
-y: absorbance }], {
- margin: { t: 20, l: 30, r: 20, b: 20 },
- title: 'Spectrophotometer Scan Preview',
- xaxis: { title: 'Wavelength (nm)' },
- yaxis: { title: 'Absorbance (dB)' }
- } );
+Plotly.newPlot(TESTER, [{
+  x: wavelengths,
+  y: wavelengths.map(() => 0),
+  type: 'scatter',
+  mode: 'lines+markers',
+  name: 'Absorbance',
+}], plotLayout('Spectrophotometer Scan Preview'));
 
 const baselineBtn = document.getElementById('baseline-btn');
 const singleScanBtn = document.getElementById('single-scan-btn');
 const continuousBtn = document.getElementById('continuous-btn');
-let continuousInterval = null;
+const saveDataBtn = document.getElementById('save-data-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const scanStatus = document.getElementById('scan-status');
 
-baselineBtn?.addEventListener('click', startBaseline);
-singleScanBtn?.addEventListener('click', startSingleScan);
+const settingsModal = document.getElementById('settings-modal');
+const settingsCancelBtn = document.getElementById('settings-cancel-btn');
+const settingsSaveBtn = document.getElementById('settings-save-btn');
+const integrationTimeInput = document.getElementById('setting-integration-time');
+const gainSelect = document.getElementById('setting-gain');
+const averagingInput = document.getElementById('setting-averaging');
+
+saveDataBtn.disabled = true;
+
+baselineBtn?.addEventListener('click', captureBaseline);
+singleScanBtn?.addEventListener('click', runSingleScan);
 continuousBtn?.addEventListener('click', toggleContinuousScan);
+saveDataBtn?.addEventListener('click', saveDataAsCsv);
+settingsBtn?.addEventListener('click', openSettingsModal);
+settingsCancelBtn?.addEventListener('click', closeSettingsModal);
+settingsSaveBtn?.addEventListener('click', saveSettings);
+settingsModal?.addEventListener('click', e => {
+  if (e.target === settingsModal) closeSettingsModal();
+});
 
-function startBaseline() {
-  console.log('Baseline scan started');
-  Plotly.react(TESTER, [{
-    x: wavelengths,
-    y: absorbanceBaseline,
-    type: 'scatter',
-    mode: 'lines+markers',
-    name: 'Baseline'
-  }], {
+function plotLayout(title) {
+  return {
     margin: { t: 20, l: 30, r: 20, b: 20 },
-    title: 'Baseline Scan',
-    xaxis: { title: 'Wavelength' },
-    yaxis: { title: 'Intensity' }
-  });
+    title,
+    xaxis: { title: 'Wavelength (nm)' },
+    yaxis: { title: 'Absorbance (dB)' },
+  };
 }
 
-function startSingleScan() {
-  console.log('Single scan started');
+function setScanStatus(text) {
+  if (scanStatus) scanStatus.textContent = text;
+}
+
+// Simulates one raw sensor reading across all 14 AS7343 channels,
+// shaped by the current gain/integration-time/averaging settings.
+function readSensorChannels() {
+  const noiseScale = 0.08 / Math.sqrt(scanSettings.integrationTimeMs / 100);
+  const sums = wavelengths.map(() => 0);
+  for (let s = 0; s < scanSettings.averaging; s++) {
+    wavelengths.forEach((_, i) => {
+      const peak = 0.5 - Math.abs(i - wavelengths.length / 2) * 0.02;
+      const noise = (Math.random() - 0.5) * noiseScale;
+      sums[i] += Math.max(0, (peak + noise) * scanSettings.gain);
+    });
+  }
+  return sums.map(v => v / scanSettings.averaging);
+}
+
+function computeAbsorbance(raw) {
+  if (!scanState.baseline) return raw;
+  return raw.map((v, i) => v - scanState.baseline[i]);
+}
+
+function captureBaseline() {
+  scanState.baseline = readSensorChannels();
+  setScanStatus('Baseline (dark reference) captured');
+  Plotly.react(TESTER, [{
+    x: wavelengths,
+    y: scanState.baseline,
+    type: 'scatter',
+    mode: 'lines+markers',
+    name: 'Baseline',
+  }], plotLayout('Baseline Scan'));
+}
+
+function runSingleScan() {
+  const raw = readSensorChannels();
+  const absorbance = computeAbsorbance(raw);
+  scanState.lastScan = { raw, absorbance, timestamp: new Date() };
+  saveDataBtn.disabled = false;
+  setScanStatus(
+    scanState.baseline
+      ? 'Single scan complete (baseline-corrected)'
+      : 'Single scan complete (no baseline captured)'
+  );
   Plotly.react(TESTER, [{
     x: wavelengths,
     y: absorbance,
     type: 'scatter',
     mode: 'lines+markers',
-    name: 'Single Scan'
-  }], {
-    margin: { t: 20, l: 30, r: 20, b: 20 },
-    title: 'Single Scan',
-    xaxis: { title: 'Wavelength' },
-    yaxis: { title: 'Intensity' }
-  });
+    name: 'Single Scan',
+  }], plotLayout('Single Scan'));
 }
 
 function toggleContinuousScan() {
-  if (continuousInterval) {
+  if (scanState.continuousInterval) {
     stopContinuousScan();
     return;
   }
 
-  console.log('Continuous scan started');
+  setScanStatus('Continuous scan running...');
   continuousBtn.textContent = 'STOP CONTINUOUS';
-  continuousInterval = setInterval(() => {
-    const nextY = absorbance.map(v => v + (Math.random() - 0.5) * 0.05);
-    Plotly.restyle('tester', { y: [nextY] }, 0);
-  }, 1000);
+  scanState.continuousInterval = setInterval(() => {
+    const raw = readSensorChannels();
+    const absorbance = computeAbsorbance(raw);
+    scanState.lastScan = { raw, absorbance, timestamp: new Date() };
+    saveDataBtn.disabled = false;
+    Plotly.react(TESTER, [{
+      x: wavelengths,
+      y: absorbance,
+      type: 'scatter',
+      mode: 'lines+markers',
+      name: 'Continuous Scan',
+    }], plotLayout('Continuous Scan'));
+  }, 500);
 }
 
 function stopContinuousScan() {
-  console.log('Continuous scan stopped');
-  clearInterval(continuousInterval);
-  continuousInterval = null;
+  clearInterval(scanState.continuousInterval);
+  scanState.continuousInterval = null;
   continuousBtn.textContent = 'CONTINUOUS SCAN';
+  setScanStatus('Continuous scan stopped');
 }
+
+function saveDataAsCsv() {
+  if (!scanState.lastScan) return;
+
+  const { raw, absorbance, timestamp } = scanState.lastScan;
+  const rows = ['Wavelength (nm),Raw Signal,Absorbance (dB)'];
+  wavelengths.forEach((w, i) => {
+    rows.push(`${w},${raw[i].toFixed(4)},${absorbance[i].toFixed(4)}`);
+  });
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `scan-${timestamp.toISOString().replace(/[:.]/g, '-')}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setScanStatus('Scan data saved to CSV');
+}
+
+function openSettingsModal() {
+  integrationTimeInput.value = scanSettings.integrationTimeMs;
+  gainSelect.value = scanSettings.gain;
+  averagingInput.value = scanSettings.averaging;
+  settingsModal.classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+  settingsModal.classList.add('hidden');
+}
+
+function saveSettings() {
+  scanSettings.integrationTimeMs = Number(integrationTimeInput.value) || scanSettings.integrationTimeMs;
+  scanSettings.gain = Number(gainSelect.value) || scanSettings.gain;
+  scanSettings.averaging = Math.max(1, Number(averagingInput.value) || scanSettings.averaging);
+  closeSettingsModal();
+  setScanStatus('Settings updated');
+}
+const ui = new WebUI();
+ui.on_connect(onUIConnected);
 ui.on_disconnect(onUIDisconnected);
 
 const OFF_COLOR = '#DAE3E3';
@@ -129,6 +236,7 @@ function setupPaletteLED(ledNumber) {
   const switchEl = document.getElementById(`led${ledNumber}-switch`);
   const palette = document.getElementById(`led${ledNumber}-palette`);
   const circle = document.getElementById(`led${ledNumber}-circle`);
+  if (!switchEl || !palette || !circle) return;
 
   switchEl.addEventListener('change', e => {
     ledState[ledNumber].isOn = e.target.checked;
@@ -162,6 +270,7 @@ function setupColorPickerLED(ledNumber) {
   const picker = document.getElementById(`led${ledNumber}-color`);
   const hexInput = document.getElementById(`led${ledNumber}-hex`);
   const circle = document.getElementById(`led${ledNumber}-circle`);
+  if (!switchEl || !trigger || !picker || !hexInput || !circle) return;
 
   switchEl.addEventListener('change', e => {
     ledState[ledNumber].isOn = e.target.checked;

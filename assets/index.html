@@ -34,7 +34,10 @@ SPDX-License-Identifier: MPL-2.0
           <button id="baseline-btn">BASELINE</button>
           <button id="single-scan-btn">SINGLE SCAN</button>
           <button id="continuous-btn">CONTINUOUS SCAN</button>
+          <button id="save-data-btn">SAVE DATA</button>
+          <button id="settings-btn">SETTINGS</button>
         </div>
+        <p id="scan-status" class="scan-status">No scan performed yet</p>
       </div>
       <div id="tester" style="width:600px;height:330px;"></div>
     </div>
@@ -64,6 +67,35 @@ SPDX-License-Identifier: MPL-2.0
       <p>This is the content displayed inside the third tab.</p>
     </div>
   </div>
+
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Scan Settings</h3>
+      <label class="modal-field">
+        Integration Time (ms)
+        <input type="number" id="setting-integration-time" min="1" step="1" />
+      </label>
+      <label class="modal-field">
+        Gain
+        <select id="setting-gain">
+          <option value="0.5">0.5x</option>
+          <option value="1">1x</option>
+          <option value="2">2x</option>
+          <option value="4">4x</option>
+          <option value="8">8x</option>
+        </select>
+      </label>
+      <label class="modal-field">
+        Sample Averaging
+        <input type="number" id="setting-averaging" min="1" step="1" />
+      </label>
+      <div class="modal-actions">
+        <button id="settings-cancel-btn" class="btn-secondary">CANCEL</button>
+        <button id="settings-save-btn">SAVE</button>
+      </div>
+    </div>
+  </div>
+
   <script src="libs/socket.io.min.js"></script>
   <script src="libs/arduino.js"></script>
   <script src="app.js"></script>

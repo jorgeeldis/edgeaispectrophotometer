@@ -445,6 +445,7 @@ input:checked + .slider:before {
   padding: 20px;
   border: 1px solid #ccc;
   border-top: none;
+  height: 390px;
 }
 
 /* Only display the panel with the active class */

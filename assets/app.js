@@ -169,6 +169,7 @@ function saveDataAsCsv() {
 }
 
 function openSettingsModal() {
+  console.log("hi")
   integrationTimeInput.value = scanSettings.integrationTimeMs;
   gainSelect.value = scanSettings.gain;
   averagingInput.value = scanSettings.averaging;

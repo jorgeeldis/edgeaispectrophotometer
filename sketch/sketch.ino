@@ -29,21 +29,7 @@ void readSpectralData() {
 void setup()
 {
     Wire.begin();       // Initialize I²C communication
-    Bridge.begin();
-    Bridge.provide("ch0", String(spectralData[0]));
-    Bridge.provide("ch1", String(spectralData[1]));  
-    Bridge.provide("ch2", String(spectralData[2]));  
-    Bridge.provide("ch3", String(spectralData[3]));  
-    Bridge.provide("ch4", String(spectralData[4]));  
-    Bridge.provide("ch5", String(spectralData[5]));  
-    Bridge.provide("ch6", String(spectralData[6]));  
-    Bridge.provide("ch7", String(spectralData[7]));  
-    Bridge.provide("ch8", String(spectralData[8]));  
-    Bridge.provide("ch9", String(spectralData[9]));  
-    Bridge.provide("ch10", String(spectralData[10]));  
-    Bridge.provide("ch11", String(spectralData[11]));  
-    Bridge.provide("ch12", String(spectralData[12]));  
-    Bridge.provide("ch13", String(spectralData[13]));  
+    Bridge.begin(); 
 }
 
 void loop() {

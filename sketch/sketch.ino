@@ -28,18 +28,27 @@ void readSpectralData() {
 
 void setup()
 {
-    Wire.begin();       // Initialize I²C communication
-    Bridge.begin(); 
+    Wire.begin();
+    Bridge.begin();
+    
+    // Provide lambda functions that return current values
+    Bridge.provide("ch0", []() { return String(spectralData[0]); });
+    Bridge.provide("ch1", []() { return String(spectralData[1]); });
+    Bridge.provide("ch2", []() { return String(spectralData[2]); });
+    Bridge.provide("ch3", []() { return String(spectralData[3]); });
+    Bridge.provide("ch4", []() { return String(spectralData[4]); });
+    Bridge.provide("ch5", []() { return String(spectralData[5]); });
+    Bridge.provide("ch6", []() { return String(spectralData[6]); });
+    Bridge.provide("ch7", []() { return String(spectralData[7]); });
+    Bridge.provide("ch8", []() { return String(spectralData[8]); });
+    Bridge.provide("ch9", []() { return String(spectralData[9]); });
+    Bridge.provide("ch10", []() { return String(spectralData[10]); });
+    Bridge.provide("ch11", []() { return String(spectralData[11]); });
+    Bridge.provide("ch12", []() { return String(spectralData[12]); });
+    Bridge.provide("ch13", []() { return String(spectralData[13]); });
 }
 
 void loop() {
-  readSpectralData();
-  
-  // Update Bridge with fresh data every loop
-  for (int i = 0; i < NUM_CHANNELS; i++) {
-    String key = "ch" + String(i);
-    Bridge.put(key, String(spectralData[i]));
-  }
-  
-  delay(1000);
+    readSpectralData();
+    delay(1000);
 }

@@ -10,7 +10,7 @@ def update_sensor_data():
         try:
             channels = []
             for i in range(14):
-                value = bridge.call(f"ch{i}")
+                value = Bridge.call(f"ch{i}")
                 channels.append(str(value))
             
             # Send all 14 channels as comma-separated string

@@ -25,8 +25,8 @@
   },
   {
     "compile": {
-      "source_path": "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged",
-      "depfile_path": "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged.libsdetect.d"
+      "source_path": "/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged",
+      "depfile_path": "/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged.libsdetect.d"
     },
     "compile_task": {
       "args": [
@@ -80,12 +80,12 @@
         "-I/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0/cores/arduino/api/deprecated-avr-comp",
         "-iprefix/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0/variants/arduino_uno_q_stm32u585xx",
         "@/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0/variants/arduino_uno_q_stm32u585xx/includes.txt",
-        "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged",
+        "/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged",
         "-o",
         "/dev/null",
         "-MMD",
         "-MF",
-        "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged.libsdetect.d"
+        "/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/sketch/sketch.ino.cpp.merged.libsdetect.d"
       ]
     }
   },
@@ -95,7 +95,7 @@
   {
     "compile": {
       "source_path": "/home/arduino/.arduino15/internal/Arduino_RouterBridge_0.4.3_456a4ab6b378b066/Arduino_RouterBridge/src/singletons.cpp",
-      "depfile_path": "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/libraries/Arduino_RouterBridge/singletons.cpp.libsdetect.d"
+      "depfile_path": "/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/libraries/Arduino_RouterBridge/singletons.cpp.libsdetect.d"
     },
     "compile_task": {
       "args": [
@@ -154,7 +154,7 @@
         "/dev/null",
         "-MMD",
         "-MF",
-        "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/libraries/Arduino_RouterBridge/singletons.cpp.libsdetect.d"
+        "/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/libraries/Arduino_RouterBridge/singletons.cpp.libsdetect.d"
       ]
     }
   },

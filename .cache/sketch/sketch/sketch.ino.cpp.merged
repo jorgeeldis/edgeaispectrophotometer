@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#line 1 "/home/arduino/ArduinoApps/edge-ai-spectrophotometer/sketch/sketch.ino"
+#line 1 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 // SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
 //
 // SPDX-License-Identifier: MPL-2.0

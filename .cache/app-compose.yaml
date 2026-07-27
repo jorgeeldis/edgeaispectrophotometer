@@ -1,10 +1,10 @@
-name: edge-ai-spectrophotometer
+name: edgeaispectrophotometer
 services:
   main:
     image: ghcr.io/arduino/app-bricks/python-apps-base:0.11.0
     volumes:
     - type: bind
-      source: /home/arduino/ArduinoApps/edge-ai-spectrophotometer
+      source: /home/arduino/ArduinoApps/edgeaispectrophotometer
       target: /app
     - type: bind
       source: /dev
@@ -55,9 +55,9 @@ services:
     labels:
       cc.arduino.app: "true"
       cc.arduino.app.main: "true"
-      cc.arduino.app.path: /home/arduino/ArduinoApps/edge-ai-spectrophotometer
+      cc.arduino.app.path: /home/arduino/ArduinoApps/edgeaispectrophotometer
     environment:
-      APP_HOME: /home/arduino/ArduinoApps/edge-ai-spectrophotometer
+      APP_HOME: /home/arduino/ArduinoApps/edgeaispectrophotometer
       BOARD_NAME: unoq
       HOST_IP: 192.168.0.16
       MODELS_PATH: /var/lib/arduino-app-cli/models

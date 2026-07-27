@@ -1,4 +1,4 @@
-/home/arduino/ArduinoApps/edge-ai-spectrophotometer/.cache/sketch/core/api/PluggableUSB.cpp.o: \
+/home/arduino/ArduinoApps/edgeaispectrophotometer/.cache/sketch/core/api/PluggableUSB.cpp.o: \
  /home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0/cores/arduino/api/PluggableUSB.cpp \
  /home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0/variants/arduino_uno_q_stm32u585xx/llext-edk/include/zephyr/include/generated/zephyr/autoconf.h \
  /home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0/variants/arduino_uno_q_stm32u585xx/llext-edk/include/zephyr/include/zephyr/toolchain/zephyr_stdint.h \

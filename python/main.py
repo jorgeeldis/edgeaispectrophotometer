@@ -1,40 +1,33 @@
-# SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
-#
-# SPDX-License-Identifier: MPL-2.0
-
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
+from arduino import Bridge
+import time
 
 ui = WebUI()
 
-def on_set_color(id, message: dict):
-    ledid = message.get("led")
-    rgb_color = message.get("color")
-    # Led 1 and 2 are controlled by directly (MPU), while Led 3 and 4 are controlled via Bridge (MCU)
-    try:
-        if ledid not in (1, 2, 3, 4):
-            raise ValueError(f"Unknown led '{ledid}'")
+def update_sensor_data():
+    # Continuously get data from Bridge and send to HTML
+    while True:
+        try:
+            channels = []
+            for i in range(14):
+                value = Bridge.get(f"ch{i}")
+                channels.append(str(value))
+            
+            # Send all 14 channels as comma-separated string
+            data_string = ",".join(channels)
+            
+            # Emit to HTML via WebSocket
+            ui.emit("html_sensor_event", data_string)
+            
+            time.sleep(1)  # Update every 1 second
+        except Exception as e:
+            print(f"Error: {e}")
+            time.sleep(1)
 
-        if not rgb_color or not all(k in rgb_color for k in ("r", "g", "b")):
-            raise ValueError("Color must be an object with 'r', 'g', 'b' keys")
-
-        match ledid:
-            case 1:
-                Leds.set_led1_color(rgb_color["r"] != 0, rgb_color["g"] != 0, rgb_color["b"] != 0)
-            case 2:
-                Leds.set_led2_color(rgb_color["r"] != 0, rgb_color["g"] != 0, rgb_color["b"] != 0)
-            case 3:
-                Bridge.call("set_led3_color", rgb_color["r"], rgb_color["g"], rgb_color["b"])
-            case 4:
-                Bridge.call("set_led4_color", rgb_color["r"] != 0, rgb_color["g"] != 0, rgb_color["b"] != 0)
-
-    except Exception as e:
-        ui.send_message("error", f"LED color set error: {e}")
-
-#Initialize LEDs to off state (only 1 and 2 here, 3 and 4 will be set in MCU setup)
-on_set_color(1, {"led": 1, "color": {"r": 0, "g": 0, "b": 0}})
-on_set_color(2, {"led": 2, "color": {"r": 0, "g": 0, "b": 0}})
-
-ui.on_message("set_color", on_set_color)
+# Start background thread
+import threading
+thread = threading.Thread(target=update_sensor_data, daemon=True)
+thread.start()
 
 App.run()

@@ -1,6 +1,5 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
-from arduino import Bridge
 import time
 
 ui = WebUI()
@@ -11,7 +10,7 @@ def update_sensor_data():
         try:
             channels = []
             for i in range(14):
-                value = Bridge.get(f"ch{i}")
+                value = bridge.call(f"ch{i}")
                 channels.append(str(value))
             
             # Send all 14 channels as comma-separated string

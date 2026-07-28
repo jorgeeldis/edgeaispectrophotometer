@@ -62,6 +62,7 @@ void whiteCalibration()
 void takeBaseline()
 {
   readSpectralData(baselineData);
+  Bridge.notify("baseline", baselineData);
 }
 
 
@@ -89,6 +90,8 @@ void singleScan()
       absorbanceData[i] = 0.0;
     }
   }
+
+  
 }
 
 void printSpectralData(uint16_t data[NUM_CHANNELS])
@@ -160,29 +163,6 @@ void setup()
 
 void loop()
 {
-  /*
-   * Example measurement sequence:
-   *
-   * 1. Perform dark calibration
-   * 2. Measure reference/baseline
-   * 3. Measure sample
-   * 4. Calculate absorbance
-   */
-
-  // Uncomment these when you are ready to test the sequence.
-
-  // darkCalibration();
-  // delay(500);
-
-  // takeBaseline();
-  // delay(500);
-
-  // singleScan();
-  // delay(500);
-
-  // Print results
-  // printSpectralData(measurementData);
-  // printAbsorbanceData();
-
+  takeBaseline();
   delay(1000);
 }

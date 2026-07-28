@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
 //
 // SPDX-License-Identifier: MPL-2.0
+
+const socket = io();
+
 const RETRO_LAYOUT = {
   paper_bgcolor: "rgba(0,0,0,0)",
   plot_bgcolor: "rgba(0,0,0,0)",
@@ -130,6 +133,9 @@ function computeAbsorbance(raw) {
 }
 
 function captureBaseline() {
+  socket.on("update", (data) => {
+    console.log(data);
+  });
   scanState.baseline = readSensorChannels();
   setScanStatus("Baseline (dark reference) captured");
   Plotly.react(

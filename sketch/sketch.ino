@@ -1,4 +1,3 @@
-```cpp
 #include <Arduino_RouterBridge.h>
 #include <Adafruit_AS7343.h>
 #include <math.h>
@@ -176,7 +175,6 @@ void setup()
 
   // Initialize Arduino RouterBridge
   Bridge.begin();
-  Bridge.onNotification("getBaseline", takeBaseline);
 }
 
 void loop()

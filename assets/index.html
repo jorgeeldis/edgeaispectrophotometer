@@ -1,34 +1,687 @@
-<div class="card">
-  <h2>Live Spectral Data</h2>
-  <table class="table">
-    <tr>
-      <th>Channel</th>
-      <th>Wavelength (nm)</th>
-      <th>Value</th>
-    </tr>
-    <tbody id="sensor-display">
-      <tr><td colspan="3">Connecting...</td></tr>
-    </tbody>
-  </table>
-</div>
+<!--
+SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
-<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-<script>
-  const socket = io();
-  const wavelengths = [380, 395, 410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705];
+SPDX-License-Identifier: MPL-2.0
+-->
 
-  socket.on("html_sensor_event", function(data) {
-    const values = data.split(",");
-    let html = "";
-    
-    for (let i = 0; i < 14; i++) {
-      html += `<tr>
-        <td>Ch${i}</td>
-        <td>${wavelengths[i]}</td>
-        <td>${values[i]}</td>
-      </tr>`;
-    }
-    
-    document.getElementById("sensor-display").innerHTML = html;
-  });
-</script>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="./img/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDGE-AI SPECTROPHOTOMETER</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+</head>
+
+<body class="retro">
+  <div class="wrapper">
+
+    <div class="brand-plate">
+      <h1>Edge-AI Spectrophotometer</h1>
+      <div class="lamp-bank">
+        <div class="lamp on" id="lamp-power"><i></i>Power</div>
+        <div class="lamp on" id="lamp-sensor"><i></i>Sensor</div>
+        <div class="lamp warn" id="lamp-cal"><i></i>Calib</div>
+      </div>
+      <div class="model">MOD. SPX-14 &nbsp;|&nbsp; 380–1000 nm</div>
+    </div>
+
+    <div class="tab-menu">
+      <button class="tab-btn active" onclick="switchTab(event, 'tab1')">Home</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab2')">Measures</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab3')">Analysis</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab4')">Maintenance</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab5')">Reports</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab6')">Chat</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab7')">Help</button>
+    </div>
+
+    <!-- HOME -->
+    <div id="tab1" class="tab-panel active">
+      <div class="panel-header">
+
+        <div class="scope-well">
+          <div id="tester"></div>
+        </div>
+
+        <div class="readout">
+          <div class="readout-value">
+            <span id="peak-abs">0.000</span>
+            <h4>Peak Absorbance</h4>
+          </div>
+          <h4>Channel Summary</h4>
+          <div class="readout-row"><span>MAX</span><strong id="rd-max">— dB @ — nm</strong></div>
+          <div class="readout-row"><span>MIN</span><strong id="rd-min">— dB @ — nm</strong></div>
+          <div class="readout-row"><span>MEAN</span><strong id="rd-mean">—</strong></div>
+          <div class="readout-row"><span>NOISE σ</span><strong id="rd-noise">—</strong></div>
+          <h4 style="margin-top:14px">Acquisition</h4>
+          <div class="readout-row"><span>GAIN</span><strong id="rd-gain">4×</strong></div>
+          <div class="readout-row"><span>INT. TIME</span><strong id="rd-int">100 ms</strong></div>
+          <div class="readout-row"><span>DARK REF</span><strong id="rd-dark">OK</strong></div>
+          <div class="readout-row"><span>WHITE REF</span><strong id="rd-white">OK</strong></div>
+        </div>
+
+        <div class="scan-controls">
+          <button id="baseline-btn">Baseline</button>
+          <button id="single-scan-btn">Single Scan</button>
+          <button id="continuous-btn">Continuous</button>
+          <button id="save-data-btn">Save Data</button>
+          <button id="settings-btn">Settings</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MEASURES -->
+    <div id="tab2" class="tab-panel">
+      <h3>Measurement History</h3>
+      <div class="table-height">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">405</th>
+              <th scope="col">425</th>
+              <th scope="col">450</th>
+              <th scope="col">475</th>
+              <th scope="col">515</th>
+              <th scope="col">555</th>
+              <th scope="col">600</th>
+              <th scope="col">640</th>
+              <th scope="col">690</th>
+              <th scope="col">745</th>
+              <th scope="col">855</th>
+            </tr>
+          </thead>
+          <tbody id="measures-body">
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+            <tr>
+              <th scope="row">Coffee1</th>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+              <td>0.10</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div id="tab3" class="tab-panel">
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            <h3>Measurements</h3>
+            <div class="table-height">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Dev σ</th>
+                    <th scope="col">Conf</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="analysis-body">
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Coffee1</th>
+                    <td>Coffee</td>
+                    <td>0.86</td>
+                    <td>97%</td>
+                    <td class="pass">PASS</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Batch-Level Metrics</h3>
+            <div class="metric-card">
+              <p><strong>Batch #1</strong></p>
+              <p>Quality Score <strong>92%</strong></p>
+              <p>Status <strong><span class="pill good">Good</span></strong></p>
+              <p>Measurements <strong>5</strong></p>
+              <p>Avg Confidence <strong>96%</strong></p>
+              <p>Anomalies <strong>0</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div id="tab4" class="tab-panel">
+      <h3>Device Health</h3>
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            <div class="metric-card">
+              <p><strong>System Status</strong></p>
+              <p>Calibration <strong><span class="pill attention">Attention</span></strong></p>
+              <p>Sensor <strong><span class="pill good">Healthy</span></strong></p>
+              <p>Internal Temp <strong>31.4 °C</strong></p>
+              <p>LED Hours <strong>142 h</strong></p>
+              <p>Firmware <strong>v0.4.1</strong></p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="metric-card">
+              <p><strong>Recommended Actions</strong></p>
+              <p>Dark reference age <strong>18 h</strong></p>
+              <p>Baseline drift <strong>1.4 %</strong></p>
+              <p>Next service <strong>~58 h</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="tab5" class="tab-panel">
+      <h3>Compliance Reports</h3>
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            <div class="table-height">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Report</th>
+                    <th scope="col">Date</th>
+                  </tr>
+                </thead>
+                <tbody id="reports-body">
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">RPT-0001</th>
+                    <td>—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col">
+            <div class="scope-well" style="min-height:300px">
+              <iframe id="pdf-preview" style="width:100%;height:385px;border:0;background:#fff"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="tab6" class="tab-panel">
+      <h3>Analysis Assistant</h3>
+      <div class="scope-well" style="min-height:280px">
+        <div id="chat-log" style="height:314px;overflow-y:auto;font-family:var(--data);
+             font-size:12px;color:var(--phosphor-dim)">
+          Assistant ready. Ask about measurements, calibration, or trends.
+        </div>
+      </div>
+      <div class="scan-controls">
+        <input id="chat-input" placeholder="Type a question…" style="flex:3;min-width:220px;padding:12px;font-family:var(--data);
+                      background:#FBF7EA;border:1px solid var(--case-shadow);border-radius:4px" />
+        <button id="chat-send-btn">Send</button>
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div id="tab7" class="tab-panel">
+      <h3>Operating Guide</h3>
+      <div class="metric-card">
+        <p><strong>Quick Start</strong></p>
+        <p>1 — Close chamber, run <strong>Baseline</strong></p>
+        <p>2 — Insert reference, capture <strong>White</strong></p>
+        <p>3 — Insert sample, press <strong>Single Scan</strong></p>
+        <p>4 — Review in <strong>Analysis</strong>, export from <strong>Reports</strong></p>
+        <p>1 — Close chamber, run <strong>Baseline</strong></p>
+        <p>2 — Insert reference, capture <strong>White</strong></p>
+        <p>3 — Insert sample, press <strong>Single Scan</strong></p>
+        <p>4 — Review in <strong>Analysis</strong>, export from <strong>Reports</strong></p>
+        <p>1 — Close chamber, run <strong>Baseline</strong></p>
+        <p>2 — Insert reference, capture <strong>White</strong></p>
+        <p>3 — Insert sample, press <strong>Single Scan</strong></p>
+        <p>4 — Review in <strong>Analysis</strong>, export from <strong>Reports</strong></p>
+        <p>1 — Close chamber, run <strong>Baseline</strong></p>
+        <p>2 — Insert reference, capture <strong>White</strong></p>
+        <p>3 — Insert sample, press <strong>Single Scan</strong></p>
+        <p>4 — Review in <strong>Analysis</strong>, export from <strong>Reports</strong></p>
+
+      </div>
+    </div>
+
+
+  </div>
+
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Acquisition Settings</h3>
+      <label class="modal-field">Sample Name
+        <input type="text" id="setting-name" />
+      </label>
+      <label class="modal-field">Category
+        <select id="setting-category">
+          <option>Coffee</option>
+          <option>Milk</option>
+          <option>Water</option>
+        </select>
+      </label>
+      <label class="modal-field">Use as category reference
+        <select id="setting-reference">
+          <option>No</option>
+          <option>Yes</option>
+        </select>
+      </label>
+      <label class="modal-field">Integration Time (ms)
+        <input type="number" id="setting-integration-time" min="1" step="1" value="100" />
+      </label>
+      <label class="modal-field">Gain
+        <select id="setting-gain">
+          <option value="0.5">0.5×</option>
+          <option value="1">1×</option>
+          <option value="2">2×</option>
+          <option value="4" selected>4×</option>
+          <option value="8">8×</option>
+        </select>
+      </label>
+      <label class="modal-field">Sample Averaging
+        <input type="number" id="setting-averaging" min="1" step="1" value="10" />
+      </label>
+      <div class="modal-actions">
+        <button id="settings-cancel-btn" class="btn-secondary">Cancel</button>
+        <button id="settings-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="libs/socket.io.min.js"></script>
+  <script src="libs/arduino.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

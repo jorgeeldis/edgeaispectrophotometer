@@ -1,6 +1,32 @@
 // SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
 //
 // SPDX-License-Identifier: MPL-2.0
+const RETRO_LAYOUT = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor:  'rgba(0,0,0,0)',
+  margin: { t: 14, l: 52, r: 16, b: 42 },
+  autosize: true,
+  height: 330,
+  font: { family: 'ui-monospace, Menlo, Consolas, monospace', size: 14, color: '#8FA98B' },
+  xaxis: {
+    title: { text: 'WAVELENGTH (nm)', font: { size: 14 } },
+    gridcolor: 'rgba(143,169,139,.16)',
+    zerolinecolor: 'rgba(143,169,139,.3)',
+    linecolor: 'rgba(143,169,139,.4)',
+    tickfont: { size: 14 }
+  },
+  yaxis: {
+    title: { text: 'ABSORBANCE (dB)', font: { size: 14 } },
+    gridcolor: 'rgba(143,169,139,.16)',
+    zerolinecolor: 'rgba(143,169,139,.3)',
+    linecolor: 'rgba(143,169,139,.4)',
+    tickfont: { size: 14 }
+  },
+  showlegend: false
+};
+
+const RETRO_CONFIG = { displayModeBar: false, responsive: true };
+
 TESTER = document.getElementById('tester');
 
 // Mock wavelengths (nm) - 14 channels from AS7343
@@ -24,7 +50,9 @@ Plotly.newPlot(TESTER, [{
   type: 'scatter',
   mode: 'lines+markers',
   name: 'Absorbance',
-}], plotLayout('Spectrophotometer Scan Preview'));
+  line: { color: '#FFB347', width: 2, shape: 'spline' },
+  marker: { color: '#FFD08A', size: 5 },
+}], RETRO_LAYOUT, RETRO_CONFIG);
 
 const baselineBtn = document.getElementById('baseline-btn');
 const singleScanBtn = document.getElementById('single-scan-btn');

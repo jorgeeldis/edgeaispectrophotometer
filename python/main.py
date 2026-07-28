@@ -4,20 +4,24 @@ import json
 
 ui = WebUI()
 
-@ui.on("captureBaseline")
-def handle_web_click(data):
-    # Sends an empty string trigger or payload to MCU
-    Bridge.notify("getBaseline", "")
+def handle_alert(payload):
+    print(f"[Python Received] Notification: {payload}")
 
-# Fix: Decode the incoming JSON-string array from the C++ sketch before broadcasting to WebUI
-def forward_baseline(payload):
+def main():
+    # 2. Initialize the Python bridge instance
+    
+    Bridge.begin()
+
+    # 3. Link the C++ notification name to your Python function
+    Bridge.provide("sendChannels", handle_alert)
+    print("Python Bridge is active. Waiting for notifications...")
+
+    # 4. Keep the script alive to listen for events
     try:
-        data_list = json.loads(payload)
-        ui.send_message("updateBaseline", data_list)
-    except Exception as e:
-        print("Error parsing baseline data array:", e)
-
-Bridge.provide("baselineData", forward_baseline)
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopping Python Bridge.")
 
 if __name__ == "__main__":
-    App.run()
+    main()

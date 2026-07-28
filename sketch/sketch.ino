@@ -1,54 +1,188 @@
-// SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
-//
-// SPDX-License-Identifier: MPL-2.0
-
+```cpp
 #include <Arduino_RouterBridge.h>
-#include <Wire.h>
+#include <Adafruit_AS7343.h>
+#include <math.h>
+
+// AS7343 Configuration
 #define AS7343_I2C_ADDR 0x39
 #define NUM_CHANNELS 14
+
+Adafruit_AS7343 as7343;
+
+// Spectral Data Arrays
+
+// Raw spectral measurements
 uint16_t spectralData[NUM_CHANNELS] = {0};
 
-void readSpectralData() {
-  Wire.beginTransmission(AS7343_I2C_ADDR);
-  Wire.write(0x94); // Example: Register address for spectral data
-  Wire.endTransmission();
-  Wire.requestFrom(AS7343_I2C_ADDR, NUM_CHANNELS); // Request 14 bytes of spectral data
+// Dark calibration:
+// Measurement taken with no useful light reaching the sensor.
+// Used to characterize detector/electronic background.
+uint16_t darkCalibrationData[NUM_CHANNELS] = {0};
 
-  if (Wire.available() == NUM_CHANNELS) {
-    for (int i = 0; i < NUM_CHANNELS; i++) {
-      spectralData[i] = Wire.read();  // Store each channel value
-      Serial.print("Ch"); Serial.print(i); Serial.print(": ");
-      Serial.println(spectralData[i]);
+// White/reference calibration:
+// Measurement of the reference used as I0 in absorbance calculations.
+uint16_t whiteCalibrationData[NUM_CHANNELS] = {0};
+
+// Baseline measurement:
+// Reference measurement taken before a scanning sequence.
+uint16_t baselineData[NUM_CHANNELS] = {0};
+
+// Current sample measurement
+uint16_t measurementData[NUM_CHANNELS] = {0};
+
+// Calculated absorbance for each wavelength/channel
+// Float is required because absorbance is a decimal value.
+float absorbanceData[NUM_CHANNELS] = {0};
+
+void readSpectralData(uint16_t data[NUM_CHANNELS])
+{
+  // Start a spectral measurement
+  as7343.startMeasurement();
+
+  // Wait until the internal ADC has finished measuring
+  while (!as7343.dataReady())
+  {
+    delay(1);
+  }
+
+  // Read all AS7343 spectral channels
+  as7343.readAllChannels(data);
+}
+
+void darkCalibration()
+{
+  readSpectralData(darkCalibrationData);
+}
+
+void whiteCalibration()
+{
+  readSpectralData(whiteCalibrationData);
+}
+
+void takeBaseline()
+{
+  readSpectralData(baselineData);
+}
+
+
+// Sample Measurement + Absorbance Calculation
+
+void singleScan()
+{
+  // Take the current sample measurement
+  readSpectralData(measurementData);
+
+  // Calculate absorbance for every channel
+  for (int i = 0; i < NUM_CHANNELS; i++)
+  {
+    // Prevent division by zero
+    if (measurementData[i] > 0 && baselineData[i] > 0)
+    {
+      // Cast to float to prevent integer division
+      absorbanceData[i] =
+          log10((float)baselineData[i] /
+                (float)measurementData[i]);
     }
-  } else {
-    Serial.print("ERROR: Expected 14 bytes, got ");
-    Serial.println(Wire.available());
+    else
+    {
+      // Invalid measurement
+      absorbanceData[i] = 0.0;
+    }
+  }
+}
+
+void printSpectralData(uint16_t data[NUM_CHANNELS])
+{
+  for (int i = 0; i < NUM_CHANNELS; i++)
+  {
+    Serial.print("Channel ");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(data[i]);
+  }
+}
+
+
+void printAbsorbanceData()
+{
+  for (int i = 0; i < NUM_CHANNELS; i++)
+  {
+    Serial.print("Channel ");
+    Serial.print(i);
+    Serial.print(" Absorbance: ");
+    Serial.println(absorbanceData[i], 4);
   }
 }
 
 void setup()
 {
-    Wire.begin();
-    Bridge.begin();
-    
-    // Provide lambda functions that return current values
-    Bridge.provide("ch0", []() { return String(spectralData[0]); });
-    Bridge.provide("ch1", []() { return String(spectralData[1]); });
-    Bridge.provide("ch2", []() { return String(spectralData[2]); });
-    Bridge.provide("ch3", []() { return String(spectralData[3]); });
-    Bridge.provide("ch4", []() { return String(spectralData[4]); });
-    Bridge.provide("ch5", []() { return String(spectralData[5]); });
-    Bridge.provide("ch6", []() { return String(spectralData[6]); });
-    Bridge.provide("ch7", []() { return String(spectralData[7]); });
-    Bridge.provide("ch8", []() { return String(spectralData[8]); });
-    Bridge.provide("ch9", []() { return String(spectralData[9]); });
-    Bridge.provide("ch10", []() { return String(spectralData[10]); });
-    Bridge.provide("ch11", []() { return String(spectralData[11]); });
-    Bridge.provide("ch12", []() { return String(spectralData[12]); });
-    Bridge.provide("ch13", []() { return String(spectralData[13]); });
+  Serial.begin(9600);
+
+  // Wait for Serial Monitor
+  while (!Serial)
+  {
+    delay(10);
+  }
+
+  Serial.println("Initializing AS7343...");
+
+  // Initialize AS7343
+  if (!as7343.begin())
+  {
+    Serial.println(
+      "Error: Could not find AS7343 sensor! Check wiring."
+    );
+
+    // Stop execution if sensor is not detected
+    while (1)
+    {
+      delay(10);
+    }
+  }
+
+  // Sensor Configuration
+
+  // Set sensor gain
+  as7343.setGain(AS7343_GAIN_4X);
+
+  // Set integration time
+  as7343.setATIME(19);
+
+  // Set integration step
+  as7343.setASTEP(99);
+
+  Serial.println("AS7343 successfully initialized!");
+  Serial.println("----------------------------------------");
+
+  // Initialize Arduino RouterBridge
+  Bridge.begin();
 }
 
-void loop() {
-    readSpectralData();
-    delay(1000);
+void loop()
+{
+  /*
+   * Example measurement sequence:
+   *
+   * 1. Perform dark calibration
+   * 2. Measure reference/baseline
+   * 3. Measure sample
+   * 4. Calculate absorbance
+   */
+
+  // Uncomment these when you are ready to test the sequence.
+
+  // darkCalibration();
+  // delay(500);
+
+  // takeBaseline();
+  // delay(500);
+
+  // singleScan();
+  // delay(500);
+
+  // Print results
+  // printSpectralData(measurementData);
+  // printAbsorbanceData();
+
+  delay(1000);
 }

@@ -463,7 +463,7 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
 /* Bootstrap grid gutters */
 .container { max-width: 100%; padding: 0; }
 .row { margin: 0 -8px; }
-.col { padding: 0 8px; }
+.col { margin: 0 8px; }
 
 /* ---------- Service panel (modal) ---------- */
 

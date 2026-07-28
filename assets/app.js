@@ -30,9 +30,7 @@ socket.on("updateBaseline", (baselineData) => {
   );
 });
 
-const ui = new WebUI();
-ui.on_connect(onUIConnected);
-ui.on_disconnect(onUIDisconnected);
+
 
 const RETRO_LAYOUT = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -268,3 +266,21 @@ function saveSettings() {
   closeSettingsModal();
   setScanStatus("Settings updated");
 }
+
+function switchTab(event, tabId) {
+  // Hide all content panels
+  const panels = document.querySelectorAll(".tab-panel");
+  panels.forEach((panel) => panel.classList.remove("active"));
+
+  // Remove the active class from all buttons
+  const buttons = document.querySelectorAll(".tab-btn");
+  buttons.forEach((btn) => btn.classList.remove("active"));
+
+  // Show the specific clicked panel and mark button as active
+  document.getElementById(tabId).classList.add("active");
+  event.currentTarget.classList.add("active");
+}
+
+const ui = new WebUI();
+ui.on_connect(onUIConnected);
+ui.on_disconnect(onUIDisconnected);

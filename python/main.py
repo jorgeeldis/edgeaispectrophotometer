@@ -1,11 +1,23 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
+import json
 
 ui = WebUI()
 
-def update_sensor_data(data):
-    ui.send_message("update", data)
+@ui.on("captureBaseline")
+def handle_web_click(data):
+    # Sends an empty string trigger or payload to MCU
+    Bridge.notify("getBaseline", "")
 
-Bridge.provide("baseline", update_sensor_data)
+# Fix: Decode the incoming JSON-string array from the C++ sketch before broadcasting to WebUI
+def forward_baseline(payload):
+    try:
+        data_list = json.loads(payload)
+        ui.send_message("updateBaseline", data_list)
+    except Exception as e:
+        print("Error parsing baseline data array:", e)
 
-App.run()
+Bridge.provide("baselineData", forward_baseline)
+
+if __name__ == "__main__":
+    App.run()

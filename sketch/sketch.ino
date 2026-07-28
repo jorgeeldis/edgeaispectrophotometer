@@ -59,10 +59,27 @@ void whiteCalibration()
   readSpectralData(whiteCalibrationData);
 }
 
-void takeBaseline()
+void takeBaseline(const char* event, const char* payload)
 {
+  // Read sensor values directly into your array
   readSpectralData(baselineData);
-  Bridge.notify("baseline", baselineData);
+  
+  // Fix 2: Serialize the uint16_t array into a JSON array string syntax
+  // 14 channels * approx 6 characters per integer + brackets/commas = ~120 bytes max
+  char jsonBuffer[150]; 
+  int offset = 0;
+  
+  offset += sprintf(jsonBuffer + offset, "[");
+  for (int i = 0; i < NUM_CHANNELS; i++) {
+    offset += sprintf(jsonBuffer + offset, "%u", baselineData[i]);
+    if (i < NUM_CHANNELS - 1) {
+      offset += sprintf(jsonBuffer + offset, ",");
+    }
+  }
+  offset += sprintf(jsonBuffer + offset, "]");
+
+  // Send the stringized array up to the Python layer
+  Bridge.notify("baselineData", jsonBuffer);
 }
 
 
@@ -159,10 +176,11 @@ void setup()
 
   // Initialize Arduino RouterBridge
   Bridge.begin();
+  Bridge.onNotification("getBaseline", takeBaseline);
 }
 
 void loop()
 {
-  takeBaseline();
+  Bridge.update();
   delay(1000);
 }

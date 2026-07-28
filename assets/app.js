@@ -152,7 +152,7 @@ function toggleContinuousScan() {
   }
 
   setScanStatus('Continuous scan running...');
-  continuousBtn.textContent = 'STOP CONTINUOUS';
+  continuousBtn.textContent = 'Stop';
   scanState.continuousInterval = setInterval(() => {
     const raw = readSensorChannels();
     const absorbance = computeAbsorbance(raw);
@@ -171,7 +171,7 @@ function toggleContinuousScan() {
 function stopContinuousScan() {
   clearInterval(scanState.continuousInterval);
   scanState.continuousInterval = null;
-  continuousBtn.textContent = 'CONTINUOUS SCAN';
+  continuousBtn.textContent = 'CONTINUOUS';
   setScanStatus('Continuous scan stopped');
 }
 

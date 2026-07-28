@@ -2,35 +2,41 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 const RETRO_LAYOUT = {
-  paper_bgcolor: 'rgba(0,0,0,0)',
-  plot_bgcolor:  'rgba(0,0,0,0)',
+  paper_bgcolor: "rgba(0,0,0,0)",
+  plot_bgcolor: "rgba(0,0,0,0)",
   margin: { t: 14, l: 52, r: 16, b: 42 },
   autosize: true,
   height: 330,
-  font: { family: 'ui-monospace, Menlo, Consolas, monospace', size: 14, color: '#8FA98B' },
+  font: {
+    family: "ui-monospace, Menlo, Consolas, monospace",
+    size: 14,
+    color: "#8FA98B",
+  },
   xaxis: {
-    title: { text: 'WAVELENGTH (nm)', font: { size: 14 } },
-    gridcolor: 'rgba(143,169,139,.16)',
-    zerolinecolor: 'rgba(143,169,139,.3)',
-    linecolor: 'rgba(143,169,139,.4)',
-    tickfont: { size: 14 }
+    title: { text: "WAVELENGTH (nm)", font: { size: 14 } },
+    gridcolor: "rgba(143,169,139,.16)",
+    zerolinecolor: "rgba(143,169,139,.3)",
+    linecolor: "rgba(143,169,139,.4)",
+    tickfont: { size: 14 },
   },
   yaxis: {
-    title: { text: 'ABSORBANCE (dB)', font: { size: 14 } },
-    gridcolor: 'rgba(143,169,139,.16)',
-    zerolinecolor: 'rgba(143,169,139,.3)',
-    linecolor: 'rgba(143,169,139,.4)',
-    tickfont: { size: 14 }
+    title: { text: "ABSORBANCE (dB)", font: { size: 14 } },
+    gridcolor: "rgba(143,169,139,.16)",
+    zerolinecolor: "rgba(143,169,139,.3)",
+    linecolor: "rgba(143,169,139,.4)",
+    tickfont: { size: 14 },
   },
-  showlegend: false
+  showlegend: false,
 };
 
 const RETRO_CONFIG = { displayModeBar: false, responsive: true };
 
-TESTER = document.getElementById('tester');
+TESTER = document.getElementById("tester");
 
 // Mock wavelengths (nm) - 14 channels from AS7343
-const wavelengths = [380, 395, 410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705];
+const wavelengths = [
+  380, 395, 410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705,
+];
 
 const scanState = {
   baseline: null, // dark-reference reading, per channel
@@ -44,40 +50,49 @@ const scanSettings = {
   averaging: 1,
 };
 
-Plotly.newPlot(TESTER, [{
-  x: wavelengths,
-  y: wavelengths.map(() => 0),
-  type: 'scatter',
-  mode: 'lines+markers',
-  name: 'Absorbance',
-  line: { color: '#FFB347', width: 2, shape: 'spline' },
-  marker: { color: '#FFD08A', size: 5 },
-}], RETRO_LAYOUT, RETRO_CONFIG);
+Plotly.newPlot(
+  TESTER,
+  [
+    {
+      x: wavelengths,
+      y: wavelengths.map(() => 0),
+      type: "scatter",
+      mode: "lines+markers",
+      name: "Absorbance",
+      line: { color: "#FFB347", width: 2, shape: "spline" },
+      marker: { color: "#FFD08A", size: 5 },
+    },
+  ],
+  RETRO_LAYOUT,
+  RETRO_CONFIG,
+);
 
-const baselineBtn = document.getElementById('baseline-btn');
-const singleScanBtn = document.getElementById('single-scan-btn');
-const continuousBtn = document.getElementById('continuous-btn');
-const saveDataBtn = document.getElementById('save-data-btn');
-const settingsBtn = document.getElementById('settings-btn');
-const scanStatus = document.getElementById('scan-status');
+const baselineBtn = document.getElementById("baseline-btn");
+const singleScanBtn = document.getElementById("single-scan-btn");
+const continuousBtn = document.getElementById("continuous-btn");
+const saveDataBtn = document.getElementById("save-data-btn");
+const settingsBtn = document.getElementById("settings-btn");
+const scanStatus = document.getElementById("scan-status");
 
-const settingsModal = document.getElementById('settings-modal');
-const settingsCancelBtn = document.getElementById('settings-cancel-btn');
-const settingsSaveBtn = document.getElementById('settings-save-btn');
-const integrationTimeInput = document.getElementById('setting-integration-time');
-const gainSelect = document.getElementById('setting-gain');
-const averagingInput = document.getElementById('setting-averaging');
+const settingsModal = document.getElementById("settings-modal");
+const settingsCancelBtn = document.getElementById("settings-cancel-btn");
+const settingsSaveBtn = document.getElementById("settings-save-btn");
+const integrationTimeInput = document.getElementById(
+  "setting-integration-time",
+);
+const gainSelect = document.getElementById("setting-gain");
+const averagingInput = document.getElementById("setting-averaging");
 
 saveDataBtn.disabled = true;
 
-baselineBtn?.addEventListener('click', captureBaseline);
-singleScanBtn?.addEventListener('click', runSingleScan);
-continuousBtn?.addEventListener('click', toggleContinuousScan);
-saveDataBtn?.addEventListener('click', saveDataAsCsv);
-settingsBtn?.addEventListener('click', openSettingsModal);
-settingsCancelBtn?.addEventListener('click', closeSettingsModal);
-settingsSaveBtn?.addEventListener('click', saveSettings);
-settingsModal?.addEventListener('click', e => {
+baselineBtn?.addEventListener("click", captureBaseline);
+singleScanBtn?.addEventListener("click", runSingleScan);
+continuousBtn?.addEventListener("click", toggleContinuousScan);
+saveDataBtn?.addEventListener("click", saveDataAsCsv);
+settingsBtn?.addEventListener("click", openSettingsModal);
+settingsCancelBtn?.addEventListener("click", closeSettingsModal);
+settingsSaveBtn?.addEventListener("click", saveSettings);
+settingsModal?.addEventListener("click", (e) => {
   if (e.target === settingsModal) closeSettingsModal();
 });
 
@@ -85,8 +100,8 @@ function plotLayout(title) {
   return {
     margin: { t: 20, l: 30, r: 20, b: 20 },
     title,
-    xaxis: { title: 'Wavelength (nm)' },
-    yaxis: { title: 'Absorbance (dB)' },
+    xaxis: { title: "Wavelength (nm)" },
+    yaxis: { title: "Absorbance (dB)" },
   };
 }
 
@@ -106,7 +121,7 @@ function readSensorChannels() {
       sums[i] += Math.max(0, (peak + noise) * scanSettings.gain);
     });
   }
-  return sums.map(v => v / scanSettings.averaging);
+  return sums.map((v) => v / scanSettings.averaging);
 }
 
 function computeAbsorbance(raw) {
@@ -116,14 +131,23 @@ function computeAbsorbance(raw) {
 
 function captureBaseline() {
   scanState.baseline = readSensorChannels();
-  setScanStatus('Baseline (dark reference) captured');
-  Plotly.react(TESTER, [{
-    x: wavelengths,
-    y: scanState.baseline,
-    type: 'scatter',
-    mode: 'lines+markers',
-    name: 'Baseline',
-  }], plotLayout('Baseline Scan'));
+  setScanStatus("Baseline (dark reference) captured");
+  Plotly.react(
+    TESTER,
+    [
+      {
+        x: wavelengths,
+        y: scanState.baseline,
+        type: "scatter",
+        mode: "lines+markers",
+        name: "Absorbance",
+        line: { color: "#FFB347", width: 2, shape: "spline" },
+        marker: { color: "#FFD08A", size: 5 },
+      },
+    ],
+    RETRO_LAYOUT,
+    RETRO_CONFIG,
+  );
 }
 
 function runSingleScan() {
@@ -133,16 +157,25 @@ function runSingleScan() {
   saveDataBtn.disabled = false;
   setScanStatus(
     scanState.baseline
-      ? 'Single scan complete (baseline-corrected)'
-      : 'Single scan complete (no baseline captured)'
+      ? "Single scan complete (baseline-corrected)"
+      : "Single scan complete (no baseline captured)",
   );
-  Plotly.react(TESTER, [{
-    x: wavelengths,
-    y: absorbance,
-    type: 'scatter',
-    mode: 'lines+markers',
-    name: 'Single Scan',
-  }], plotLayout('Single Scan'));
+  Plotly.react(
+    TESTER,
+    [
+      {
+        x: wavelengths,
+        y: absorbance,
+        type: "scatter",
+        mode: "lines+markers",
+        name: "Absorbance",
+        line: { color: "#FFB347", width: 2, shape: "spline" },
+        marker: { color: "#FFD08A", size: 5 },
+      },
+    ],
+    RETRO_LAYOUT,
+    RETRO_CONFIG,
+  );
 }
 
 function toggleContinuousScan() {
@@ -151,80 +184,93 @@ function toggleContinuousScan() {
     return;
   }
 
-  setScanStatus('Continuous scan running...');
-  continuousBtn.textContent = 'Stop';
+  setScanStatus("Continuous scan running...");
+  continuousBtn.textContent = "Stop";
   scanState.continuousInterval = setInterval(() => {
     const raw = readSensorChannels();
     const absorbance = computeAbsorbance(raw);
     scanState.lastScan = { raw, absorbance, timestamp: new Date() };
     saveDataBtn.disabled = false;
-    Plotly.react(TESTER, [{
-      x: wavelengths,
-      y: absorbance,
-      type: 'scatter',
-      mode: 'lines+markers',
-      name: 'Continuous Scan',
-    }], plotLayout('Continuous Scan'));
+    Plotly.react(
+      TESTER,
+      [
+        {
+          x: wavelengths,
+          y: absorbance,
+          type: "scatter",
+          mode: "lines+markers",
+          name: "Absorbance",
+          line: { color: "#FFB347", width: 2, shape: "spline" },
+          marker: { color: "#FFD08A", size: 5 },
+        },
+      ],
+      RETRO_LAYOUT,
+      RETRO_CONFIG,
+    );
   }, 500);
 }
 
 function stopContinuousScan() {
   clearInterval(scanState.continuousInterval);
   scanState.continuousInterval = null;
-  continuousBtn.textContent = 'CONTINUOUS';
-  setScanStatus('Continuous scan stopped');
+  continuousBtn.textContent = "CONTINUOUS";
+  setScanStatus("Continuous scan stopped");
 }
 
 function saveDataAsCsv() {
   if (!scanState.lastScan) return;
 
   const { raw, absorbance, timestamp } = scanState.lastScan;
-  const rows = ['Wavelength (nm),Raw Signal,Absorbance (dB)'];
+  const rows = ["Wavelength (nm),Raw Signal,Absorbance (dB)"];
   wavelengths.forEach((w, i) => {
     rows.push(`${w},${raw[i].toFixed(4)},${absorbance[i].toFixed(4)}`);
   });
 
-  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  link.download = `scan-${timestamp.toISOString().replace(/[:.]/g, '-')}.csv`;
+  link.download = `scan-${timestamp.toISOString().replace(/[:.]/g, "-")}.csv`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-  setScanStatus('Scan data saved to CSV');
+  setScanStatus("Scan data saved to CSV");
 }
 
 function openSettingsModal() {
-  console.log("hi")
+  console.log("hi");
   integrationTimeInput.value = scanSettings.integrationTimeMs;
   gainSelect.value = scanSettings.gain;
   averagingInput.value = scanSettings.averaging;
-  settingsModal.classList.remove('hidden');
+  settingsModal.classList.remove("hidden");
 }
 
 function closeSettingsModal() {
-  settingsModal.classList.add('hidden');
+  settingsModal.classList.add("hidden");
 }
 
 function saveSettings() {
-  scanSettings.integrationTimeMs = Number(integrationTimeInput.value) || scanSettings.integrationTimeMs;
+  scanSettings.integrationTimeMs =
+    Number(integrationTimeInput.value) || scanSettings.integrationTimeMs;
   scanSettings.gain = Number(gainSelect.value) || scanSettings.gain;
-  scanSettings.averaging = Math.max(1, Number(averagingInput.value) || scanSettings.averaging);
+  scanSettings.averaging = Math.max(
+    1,
+    Number(averagingInput.value) || scanSettings.averaging,
+  );
   closeSettingsModal();
-  setScanStatus('Settings updated');
+  setScanStatus("Settings updated");
 }
 const ui = new WebUI();
 ui.on_connect(onUIConnected);
 ui.on_disconnect(onUIDisconnected);
 
-const OFF_COLOR = '#DAE3E3';
+const OFF_COLOR = "#DAE3E3";
 const ledState = {
-  1: { color: '#FFFFFF', isOn: true },
-  2: { color: '#FFFFFF', isOn: true },
-  3: { color: '#FFFFFF', isOn: true },
-  4: { color: '#FFFFFF', isOn: true },
+  1: { color: "#FFFFFF", isOn: true },
+  2: { color: "#FFFFFF", isOn: true },
+  3: { color: "#FFFFFF", isOn: true },
+  4: { color: "#FFFFFF", isOn: true },
 };
 
 setupPaletteLED(1);
@@ -233,9 +279,9 @@ setupColorPickerLED(3);
 setupPaletteLED(4);
 
 function onUIConnected() {
-  const errorContainer = document.getElementById('error-container');
+  const errorContainer = document.getElementById("error-container");
   if (errorContainer) {
-    errorContainer.style.display = 'none';
+    errorContainer.style.display = "none";
   }
   // Re-sync all LEDs with the current UI state on every (re)connect,
   // so the physical LEDs always match the UI after an app restart.
@@ -243,9 +289,9 @@ function onUIConnected() {
     const state = ledState[ledNumber];
     if (state.isOn) {
       const rgb = hexToRgb(state.color);
-      ui.send_message('set_color', { led: parseInt(ledNumber), color: rgb });
+      ui.send_message("set_color", { led: parseInt(ledNumber), color: rgb });
     } else {
-      ui.send_message('set_color', {
+      ui.send_message("set_color", {
         led: parseInt(ledNumber),
         color: { r: 0, g: 0, b: 0 },
       });
@@ -254,10 +300,11 @@ function onUIConnected() {
 }
 
 function onUIDisconnected() {
-  const errorContainer = document.getElementById('error-container');
+  const errorContainer = document.getElementById("error-container");
   if (errorContainer) {
-    errorContainer.textContent = 'Connection to the board lost. Please check the connection.';
-    errorContainer.style.display = 'block';
+    errorContainer.textContent =
+      "Connection to the board lost. Please check the connection.";
+    errorContainer.style.display = "block";
   }
 }
 
@@ -267,12 +314,12 @@ function setupPaletteLED(ledNumber) {
   const circle = document.getElementById(`led${ledNumber}-circle`);
   if (!switchEl || !palette || !circle) return;
 
-  switchEl.addEventListener('change', e => {
+  switchEl.addEventListener("change", (e) => {
     ledState[ledNumber].isOn = e.target.checked;
     if (ledState[ledNumber].isOn) {
       updateColor(ledNumber, ledState[ledNumber].color);
     } else {
-      ui.send_message('set_color', {
+      ui.send_message("set_color", {
         led: ledNumber,
         color: { r: 0, g: 0, b: 0 },
       });
@@ -280,8 +327,8 @@ function setupPaletteLED(ledNumber) {
     }
   });
 
-  palette.addEventListener('click', e => {
-    if (e.target.classList.contains('color-square')) {
+  palette.addEventListener("click", (e) => {
+    if (e.target.classList.contains("color-square")) {
       if (ledState[ledNumber].isOn) {
         const newColor = e.target.dataset.color;
         updateColor(ledNumber, newColor);
@@ -301,12 +348,12 @@ function setupColorPickerLED(ledNumber) {
   const circle = document.getElementById(`led${ledNumber}-circle`);
   if (!switchEl || !trigger || !picker || !hexInput || !circle) return;
 
-  switchEl.addEventListener('change', e => {
+  switchEl.addEventListener("change", (e) => {
     ledState[ledNumber].isOn = e.target.checked;
     if (ledState[ledNumber].isOn) {
       updateColor(ledNumber, ledState[ledNumber].color);
     } else {
-      ui.send_message('set_color', {
+      ui.send_message("set_color", {
         led: ledNumber,
         color: { r: 0, g: 0, b: 0 },
       });
@@ -314,19 +361,19 @@ function setupColorPickerLED(ledNumber) {
     }
   });
 
-  trigger.addEventListener('click', () => {
+  trigger.addEventListener("click", () => {
     if (ledState[ledNumber].isOn) {
       picker.click();
     }
   });
 
-  picker.addEventListener('input', e => {
+  picker.addEventListener("input", (e) => {
     if (ledState[ledNumber].isOn) {
       updateColor(ledNumber, e.target.value);
     }
   });
 
-  hexInput.addEventListener('change', e => {
+  hexInput.addEventListener("change", (e) => {
     const newColor = e.target.value;
     if (ledState[ledNumber].isOn) {
       if (/^#[0-9A-F]{6}$/i.test(newColor)) {
@@ -355,12 +402,12 @@ function updateColor(ledNumber, newColor, updateStateColor = true) {
 
   if (ledState[ledNumber].isOn) {
     const rgb = hexToRgb(newColor);
-    ui.send_message('set_color', { led: ledNumber, color: rgb });
+    ui.send_message("set_color", { led: ledNumber, color: rgb });
     console.log(`LED ${ledNumber} - R: ${rgb.r}, G: ${rgb.g}, B: ${rgb.b}`);
-  } else if (newColor === '#000000') {
+  } else if (newColor === "#000000") {
     // Specifically for turning off
     const rgb = hexToRgb(newColor);
-    ui.send_message('set_color', { led: ledNumber, color: rgb });
+    ui.send_message("set_color", { led: ledNumber, color: rgb });
     console.log(`LED ${ledNumber} turned OFF`);
   }
 }
@@ -374,15 +421,14 @@ function hexToRgb(hex) {
 
 function switchTab(event, tabId) {
   // Hide all content panels
-  const panels = document.querySelectorAll('.tab-panel');
-  panels.forEach(panel => panel.classList.remove('active'));
+  const panels = document.querySelectorAll(".tab-panel");
+  panels.forEach((panel) => panel.classList.remove("active"));
 
   // Remove the active class from all buttons
-  const buttons = document.querySelectorAll('.tab-btn');
-  buttons.forEach(btn => btn.classList.remove('active'));
+  const buttons = document.querySelectorAll(".tab-btn");
+  buttons.forEach((btn) => btn.classList.remove("active"));
 
   // Show the specific clicked panel and mark button as active
-  document.getElementById(tabId).classList.add('active');
-  event.currentTarget.classList.add('active');
+  document.getElementById(tabId).classList.add("active");
+  event.currentTarget.classList.add("active");
 }
-

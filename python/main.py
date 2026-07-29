@@ -7,27 +7,49 @@ ui = WebUI()
 latest_hardware_data = []
 
 
-# This receives data from the Arduino C++ sketch
-def receive_channels(data):
+# Arduino MCU → Python MPU
+def record_sensor_samples(
+    F1: float,
+    F2: float,
+    FZ: float,
+    F3: float,
+    F4: float,
+    F5: float,
+    FY: float,
+    FXL: float,
+    F6: float,
+    F7: float,
+    F8: float,
+    NIR: float
+):
     global latest_hardware_data
 
-    latest_hardware_data = list(data)
+    latest_hardware_data = [
+        F1, F2, FZ, F3, F4, F5,
+        FY, FXL, F6, F7, F8, NIR
+    ]
 
-    print("Received:", latest_hardware_data)
+    print("Received from Arduino:")
+    print(latest_hardware_data)
 
 
-# Register the Arduino → Python callback ONCE
-Bridge.provide("sendChannels", receive_channels)
+# Register callback once
+Bridge.provide(
+    "record_sensor_samples",
+    record_sensor_samples
+)
 
 
-# Frontend requests the latest data
+# Frontend requests latest spectrum
 @ui.sio.on('run_arduino_function')
 async def handle_frontend_request(sid, data=None):
 
     print("Frontend requested hardware baseline scan...")
 
-    # Send the latest Arduino data to the frontend
-    print(f"Sending data to frontend: {latest_hardware_data}")
+    print(
+        f"Sending data to frontend: "
+        f"{latest_hardware_data}"
+    )
 
     await ui.sio.emit(
         'sendChannels',

@@ -1,6 +1,5 @@
 #include <Adafruit_AS7343.h>
 #include <Arduino_RouterBridge.h>
-#include <array>
 
 Adafruit_AS7343 as7343;
 
@@ -17,6 +16,7 @@ void setup()
   if (!as7343.begin())
   {
     Serial.println("Error: Could not find AS7343 sensor!");
+
     while (1)
       delay(10);
   }
@@ -41,35 +41,40 @@ void loop()
 
   as7343.readAllChannels(readings);
 
-  // Use std::array instead of a normal C array
-  std::array<uint16_t, 12> data = {
-      readings[AS7343_CHANNEL_F1],
-      readings[AS7343_CHANNEL_F2],
-      readings[AS7343_CHANNEL_FZ],
-      readings[AS7343_CHANNEL_F3],
-      readings[AS7343_CHANNEL_F4],
-      readings[AS7343_CHANNEL_F5],
-      readings[AS7343_CHANNEL_FY],
-      readings[AS7343_CHANNEL_FXL],
-      readings[AS7343_CHANNEL_F6],
-      readings[AS7343_CHANNEL_F7],
-      readings[AS7343_CHANNEL_F8],
-      readings[AS7343_CHANNEL_NIR]
-  };
+  float F1  = readings[AS7343_CHANNEL_F1];
+  float F2  = readings[AS7343_CHANNEL_F2];
+  float FZ  = readings[AS7343_CHANNEL_FZ];
+  float F3  = readings[AS7343_CHANNEL_F3];
+  float F4  = readings[AS7343_CHANNEL_F4];
+  float F5  = readings[AS7343_CHANNEL_F5];
+  float FY  = readings[AS7343_CHANNEL_FY];
+  float FXL = readings[AS7343_CHANNEL_FXL];
+  float F6  = readings[AS7343_CHANNEL_F6];
+  float F7  = readings[AS7343_CHANNEL_F7];
+  float F8  = readings[AS7343_CHANNEL_F8];
+  float NIR = readings[AS7343_CHANNEL_NIR];
 
-  // Print data
   Serial.println("\n--- Spectral Readings ---");
 
-  for (int i = 0; i < 12; i++)
-  {
-    Serial.print(data[i]);
-    Serial.print(" ");
-  }
+  Serial.print("F1: ");  Serial.println(F1);
+  Serial.print("F2: ");  Serial.println(F2);
+  Serial.print("FZ: ");  Serial.println(FZ);
+  Serial.print("F3: ");  Serial.println(F3);
+  Serial.print("F4: ");  Serial.println(F4);
+  Serial.print("F5: ");  Serial.println(F5);
+  Serial.print("FY: ");  Serial.println(FY);
+  Serial.print("FXL: "); Serial.println(FXL);
+  Serial.print("F6: ");  Serial.println(F6);
+  Serial.print("F7: ");  Serial.println(F7);
+  Serial.print("F8: ");  Serial.println(F8);
+  Serial.print("NIR: "); Serial.println(NIR);
 
-  Serial.println();
-
-  // C++ → Python
-  Bridge.notify("sendChannels", data);
+  // Arduino MCU → Python MPU
+  Bridge.notify(
+    "record_sensor_samples",
+    F1, F2, FZ, F3, F4, F5,
+    FY, FXL, F6, F7, F8, NIR
+  );
 
   Serial.println("Sent to Python!");
   Serial.println("--------------------------------");

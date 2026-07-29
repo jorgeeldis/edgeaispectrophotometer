@@ -1,4 +1,5 @@
 #include <Adafruit_AS7343.h>
+#include <Arduino_RouterBridge.h>
 
 Adafruit_AS7343 as7343;
 
@@ -62,8 +63,7 @@ void loop()
       readings[AS7343_CHANNEL_F8],
       readings[AS7343_CHANNEL_NIR]};
 
-  // Assuming your array has 10 elements:
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 12; i++)
   {
     Serial.print(data[i]);
     Serial.print(" "); // Adds a space between numbers

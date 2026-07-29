@@ -8,12 +8,9 @@ def handle_alert(payload):
     print(f"[Python Received] Notification: {payload}")
 
 def main():
-    # 2. Initialize the Python bridge instance
-    
-    Bridge.begin()
 
     # 3. Link the C++ notification name to your Python function
-    Bridge.provide("sendChannels", handle_alert)
+    Bridge.call("sendChannels", handle_alert)
     print("Python Bridge is active. Waiting for notifications...")
 
     # 4. Keep the script alive to listen for events

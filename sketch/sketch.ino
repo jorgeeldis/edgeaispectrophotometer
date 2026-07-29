@@ -2,52 +2,78 @@
 #include <Arduino_RouterBridge.h>
 
 Adafruit_AS7343 as7343;
-uint16_t readings[AS7343_NUM_CHANNELS];   // size from the library, not a guess
-unsigned long lastScan = 0;
-const unsigned long SCAN_INTERVAL = 2000;
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
   Bridge.begin();
-  // no while(!Serial) — it hangs when nothing is attached
+  while (!Serial)
+    delay(10); // Wait for Serial Monitor to open
 
-  if (!as7343.begin()) {
-    Serial.println("Error: AS7343 not found");
-    while (1) { Bridge.update(); delay(10); }   // keep bridge alive even on failure
+  Serial.println("Initializing AS7343...");
+
+  if (!as7343.begin())
+  {
+    Serial.println("Error: Could not find AS7343 sensor! Check wiring.");
+    while (1)
+      delay(10);
   }
 
+  // Balanced configurations to prevent saturation on bright 5000K LEDs
   as7343.setGain(AS7343_GAIN_4X);
   as7343.setATIME(19);
   as7343.setASTEP(99);
+
+  // Optional: Uncomment the line below if you are using the onboard illumination LED
+  // as7343.enableLed(true);
+
+  Serial.println("AS7343 successfully initialized!");
+  Serial.println("---------------------------------------------------------");
 }
 
-void loop() {
-  Bridge.update();                              // serviced every iteration
+void loop()
+{
+  uint16_t readings[14]; // Array to hold all channel data
 
-  if (millis() - lastScan < SCAN_INTERVAL) return;
-  lastScan = millis();
-
+  // Start the hardware spectral conversion
   as7343.startMeasurement();
-  while (!as7343.dataReady()) {
-    Bridge.update();
+
+  // Wait until data is fully processed by the internal ADC
+  while (!as7343.dataReady())
+  {
     delay(1);
   }
+
+  // Read all 14 channels into our array
   as7343.readAllChannels(readings);
 
-  const uint8_t order[12] = {
-    AS7343_CHANNEL_F1,  AS7343_CHANNEL_F2,  AS7343_CHANNEL_FZ,
-    AS7343_CHANNEL_F3,  AS7343_CHANNEL_F4,  AS7343_CHANNEL_F5,
-    AS7343_CHANNEL_FY,  AS7343_CHANNEL_FXL, AS7343_CHANNEL_F6,
-    AS7343_CHANNEL_F7,  AS7343_CHANNEL_F8,  AS7343_CHANNEL_NIR
-  };
+  // Print spectral channels (wavelength order)
+  Serial.println("\n--- Spectral Readings ---");
 
-  // Serialize to CSV — one string crosses the bridge cleanly
-  String payload = "";
-  for (int i = 0; i < 12; i++) {
-    payload += String(readings[order[i]]);
-    if (i < 11) payload += ",";
+  uint16_t data[12] = {
+      readings[AS7343_CHANNEL_F1],
+      readings[AS7343_CHANNEL_F2],
+      readings[AS7343_CHANNEL_FZ],
+      readings[AS7343_CHANNEL_F3],
+      readings[AS7343_CHANNEL_F4],
+      readings[AS7343_CHANNEL_F5],
+      readings[AS7343_CHANNEL_FY],
+      readings[AS7343_CHANNEL_FXL],
+      readings[AS7343_CHANNEL_F6],
+      readings[AS7343_CHANNEL_F7],
+      readings[AS7343_CHANNEL_F8],
+      readings[AS7343_CHANNEL_NIR]};
+
+  for (int i = 0; i < 12; i++)
+  {
+    Serial.print(data[i]);
+    Serial.print(" "); // Adds a space between numbers
   }
+  Serial.println(); // Moves to a new line
 
-  Serial.println(payload);
-  Bridge.notify("sendChannels", payload);       // send the data, not "1"
+  Bridge.notify("sendChannels", "Example");
+
+  Serial.println("---------------------------------------------------------");
+
+  delay(2000); // Wait 2 seconds before the next reading loop
 }

@@ -70,6 +70,8 @@ void loop()
   }
   Serial.println(); // Moves to a new line
 
+  Bridge.notify("sendChannels", data)
+
   Serial.println("---------------------------------------------------------");
 
   delay(2000); // Wait 2 seconds before the next reading loop

@@ -3,10 +3,22 @@
 // SPDX-License-Identifier: MPL-2.0
 
 const socket = io();
+const scanState = {
+  baseline: [], // dark-reference reading, per channel
+  lastScan: [], // { raw, absorbance, timestamp }
+  continuousInterval: [],
+};
 
 socket.on("sendChannels", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
   
+  // Guard clause: Make sure we actually received valid array data
+  if (!baselineData || !Array.isArray(baselineData)) {
+    console.error("Expected an array but received:", baselineData);
+    // If you kept the payload dictionary style {"value": [...]}, you would do:
+    // baselineData = baselineData.value;
+  }
+
   // Store the real sensor array into your state
   scanState.baseline = baselineData;
   setScanStatus("Baseline (dark reference) captured from hardware!");
@@ -17,7 +29,7 @@ socket.on("sendChannels", (baselineData) => {
     [
       {
         x: wavelengths,
-        y: scanState.baseline,
+        y: scanState.baseline, // Plotly demands a clean 1D array here (e.g. [12, 15, 23...])
         type: "scatter",
         mode: "lines+markers",
         name: "Absorbance",
@@ -29,8 +41,6 @@ socket.on("sendChannels", (baselineData) => {
     RETRO_CONFIG,
   );
 });
-
-
 
 const RETRO_LAYOUT = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -68,12 +78,6 @@ TESTER = document.getElementById("tester");
 const wavelengths = [
   380, 395, 410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705,
 ];
-
-const scanState = {
-  baseline: null, // dark-reference reading, per channel
-  lastScan: null, // { raw, absorbance, timestamp }
-  continuousInterval: null,
-};
 
 const scanSettings = {
   integrationTimeMs: 100,
@@ -134,7 +138,7 @@ function setScanStatus(text) {
 function captureBaseline() {
   setScanStatus("Requesting baseline scan...");
   // Signal Python to trigger the hardware
-  socket.emit("sendChannels");
+  socket.emit("run_arduino_function", {});
   setScanStatus("Baseline (dark reference) captured");
   Plotly.react(
     TESTER,

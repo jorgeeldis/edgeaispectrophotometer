@@ -4,21 +4,15 @@ import json
 
 ui = WebUI()
 
-def handle_alert(payload):
-    print(f"[Python Received] Notification: {payload}")
+def process_array(val1):
+    # Reassemble them into a python list
+    my_list = [val1]
+    print(f"Received Array Data: {my_list}")
 
-def main():
+# Register the listener
+Bridge.provide("sendChannels", process_array)
 
-    # 3. Link the C++ notification name to your Python function
-    Bridge.call("sendChannels", handle_alert)
-    print("Python Bridge is active. Waiting for notifications...")
+def loop():
+    pass
 
-    # 4. Keep the script alive to listen for events
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Stopping Python Bridge.")
-
-if __name__ == "__main__":
-    main()
+App.run(user_loop=loop)

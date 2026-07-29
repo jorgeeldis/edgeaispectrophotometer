@@ -70,7 +70,7 @@ void loop()
   }
   Serial.println(); // Moves to a new line
 
-  Bridge.provide("sendChannels", data[0]);
+  //Bridge.provide("sendChannels", data[0]);
 
   Serial.println("---------------------------------------------------------");
 

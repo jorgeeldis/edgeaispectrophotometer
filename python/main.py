@@ -6,6 +6,17 @@ ui = WebUI()
 # Global variable to temporarily hold the latest data from the hardware
 latest_hardware_data = []
 
+# This receives the array from the Arduino C++ (MCU) side
+def process_array(val1):
+    global latest_hardware_data
+    # Reassemble/save the incoming sensor data array 
+    latest_hardware_data = val1 
+    print(f"Hardware updated Array Data: {latest_hardware_data}")
+    return val1
+
+# Register the Bridge listener so the MCU side can pipe data up to Python
+Bridge.provide("sendChannels", process_array)
+
 @ui.sio.on('run_arduino_function')
 async def handle_frontend_request(sid, data=None):
     print(f"Frontend requested hardware baseline scan...")
@@ -18,17 +29,6 @@ async def handle_frontend_request(sid, data=None):
     # Note: Send the array directly so your Javascript matches what Plotly expects!
     print(f"Action complete. Sending array data to frontend: {latest_hardware_data}")
     await ui.sio.emit('sendChannels', latest_hardware_data)
-
-# This receives the array from the Arduino C++ (MCU) side
-def process_array(val1):
-    global latest_hardware_data
-    # Reassemble/save the incoming sensor data array 
-    latest_hardware_data = val1 
-    print(f"Hardware updated Array Data: {latest_hardware_data}")
-    return val1
-
-# Register the Bridge listener so the MCU side can pipe data up to Python
-Bridge.provide("sendChannels", process_array)
 
 def loop():
     pass

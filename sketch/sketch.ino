@@ -6,6 +6,7 @@ Adafruit_AS7343 as7343;
 void setup()
 {
   Serial.begin(9600);
+  Bridge.begin();
   while (!Serial)
     delay(10); // Wait for Serial Monitor to open
 

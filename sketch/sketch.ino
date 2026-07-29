@@ -1,12 +1,12 @@
 #include <Adafruit_AS7343.h>
 #include <Arduino_RouterBridge.h>
+#include <array>
 
 Adafruit_AS7343 as7343;
 
 void setup()
 {
   Serial.begin(9600);
-
   Bridge.begin();
 
   while (!Serial)
@@ -41,7 +41,8 @@ void loop()
 
   as7343.readAllChannels(readings);
 
-  uint16_t data[12] = {
+  // Use std::array instead of a normal C array
+  std::array<uint16_t, 12> data = {
       readings[AS7343_CHANNEL_F1],
       readings[AS7343_CHANNEL_F2],
       readings[AS7343_CHANNEL_FZ],
@@ -56,10 +57,22 @@ void loop()
       readings[AS7343_CHANNEL_NIR]
   };
 
-  // Arduino C++ → Python
+  // Print data
+  Serial.println("\n--- Spectral Readings ---");
+
+  for (int i = 0; i < 12; i++)
+  {
+    Serial.print(data[i]);
+    Serial.print(" ");
+  }
+
+  Serial.println();
+
+  // C++ → Python
   Bridge.notify("sendChannels", data);
 
-  Serial.println("Sent spectrum to Python.");
+  Serial.println("Sent to Python!");
+  Serial.println("--------------------------------");
 
   delay(2000);
 }

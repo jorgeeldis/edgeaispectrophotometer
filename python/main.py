@@ -3,18 +3,17 @@ from arduino.app_bricks.web_ui import WebUI
 
 ui = WebUI()
 
-# Global variable to temporarily hold the latest data from the hardware
 latest_hardware_data = []
 
-# This receives the array from the Arduino C++ (MCU) side
-def process_array(val1):
+def process_array(payload):
     global latest_hardware_data
-    # Reassemble/save the incoming sensor data array 
-    latest_hardware_data = val1 
-    print(f"Hardware updated Array Data: {latest_hardware_data}")
-    return val1
+    try:
+        latest_hardware_data = [int(v) for v in str(payload).split(",")]
+        print(f"Channels: {latest_hardware_data}")
+    except ValueError:
+        print(f"Bad payload: {payload!r}")
+    return "ok"
 
-# Register the Bridge listener so the MCU side can pipe data up to Python
 Bridge.provide("sendChannels", process_array)
 
 @ui.sio.on('run_arduino_function')

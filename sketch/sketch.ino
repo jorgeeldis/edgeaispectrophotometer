@@ -42,7 +42,20 @@ void loop() {
   // Print spectral channels (wavelength order)
   Serial.println("\n--- Spectral Readings ---");
 
-  data = [readings[AS7343_CHANNEL_F1], readings[AS7343_CHANNEL_F2], readings[AS7343_CHANNEL_FZ], readings[AS7343_CHANNEL_F3], readings[AS7343_CHANNEL_F4], readings[AS7343_CHANNEL_F5], readings[AS7343_CHANNEL_FY], readings[AS7343_CHANNEL_FXL], readings[AS7343_CHANNEL_F6], readings[AS7343_CHANNEL_F7], readings[AS7343_CHANNEL_F8], readings[AS7343_CHANNEL_NIR]];
+  uint16_t data[12] = {
+  readings[AS7343_CHANNEL_F1],
+  readings[AS7343_CHANNEL_F2],
+  readings[AS7343_CHANNEL_FZ],
+  readings[AS7343_CHANNEL_F3],
+  readings[AS7343_CHANNEL_F4],
+  readings[AS7343_CHANNEL_F5],
+  readings[AS7343_CHANNEL_FY],
+  readings[AS7343_CHANNEL_FXL],
+  readings[AS7343_CHANNEL_F6],
+  readings[AS7343_CHANNEL_F7],
+  readings[AS7343_CHANNEL_F8],
+  readings[AS7343_CHANNEL_NIR]
+};
 
   Serial.println(data);
 

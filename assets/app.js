@@ -4,7 +4,7 @@
 
 const socket = io();
 
-socket.on("updateBaseline", (baselineData) => {
+socket.on("sendChannels", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
   
   // Store the real sensor array into your state

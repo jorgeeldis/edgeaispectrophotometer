@@ -6,49 +6,40 @@ Adafruit_AS7343 as7343;
 void setup()
 {
   Serial.begin(9600);
+
   Bridge.begin();
+
   while (!Serial)
-    delay(10); // Wait for Serial Monitor to open
+    delay(10);
 
   Serial.println("Initializing AS7343...");
 
   if (!as7343.begin())
   {
-    Serial.println("Error: Could not find AS7343 sensor! Check wiring.");
+    Serial.println("Error: Could not find AS7343 sensor!");
     while (1)
       delay(10);
   }
 
-  // Balanced configurations to prevent saturation on bright 5000K LEDs
   as7343.setGain(AS7343_GAIN_4X);
   as7343.setATIME(19);
   as7343.setASTEP(99);
 
-  // Optional: Uncomment the line below if you are using the onboard illumination LED
-  // as7343.enableLed(true);
-
   Serial.println("AS7343 successfully initialized!");
-  Serial.println("---------------------------------------------------------");
 }
 
 void loop()
 {
-  uint16_t readings[14]; // Array to hold all channel data
+  uint16_t readings[14];
 
-  // Start the hardware spectral conversion
   as7343.startMeasurement();
 
-  // Wait until data is fully processed by the internal ADC
   while (!as7343.dataReady())
   {
     delay(1);
   }
 
-  // Read all 14 channels into our array
   as7343.readAllChannels(readings);
-
-  // Print spectral channels (wavelength order)
-  Serial.println("\n--- Spectral Readings ---");
 
   uint16_t data[12] = {
       readings[AS7343_CHANNEL_F1],
@@ -62,22 +53,13 @@ void loop()
       readings[AS7343_CHANNEL_F6],
       readings[AS7343_CHANNEL_F7],
       readings[AS7343_CHANNEL_F8],
-      readings[AS7343_CHANNEL_NIR]};
+      readings[AS7343_CHANNEL_NIR]
+  };
 
-  for (int i = 0; i < 12; i++)
-  {
-    Serial.print(data[i]);
-    Serial.print(" "); // Adds a space between numbers
-  }
-  Serial.println(); // Moves to a new line
+  // Arduino C++ → Python
+  Bridge.notify("sendChannels", data);
 
-  String sendChannelsFunction() {
-    return "[340, 380, 410, 470, 520, 560]"; // Simulating your raw channel data string
-}
+  Serial.println("Sent spectrum to Python.");
 
-  Bridge.notify("sendChannels", sendChannelsFunction);
-
-  Serial.println("---------------------------------------------------------");
-
-  delay(2000); // Wait 2 seconds before the next reading loop
+  delay(2000);
 }

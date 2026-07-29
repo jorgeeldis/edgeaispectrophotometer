@@ -10,7 +10,7 @@ def process_array(val1):
     print(f"Received Array Data: {my_list}")
 
 # Register the listener
-Bridge.call("sendChannels", process_array)
+Bridge.provide("sendChannels", process_array)
 
 def loop():
     pass

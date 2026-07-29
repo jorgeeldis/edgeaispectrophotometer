@@ -134,8 +134,7 @@ function setScanStatus(text) {
 function captureBaseline() {
   setScanStatus("Requesting baseline scan...");
   // Signal Python to trigger the hardware
-  socket.emit("captureBaseline");
-  scanState.baseline = readSensorChannels();
+  socket.emit("sendChannels");
   setScanStatus("Baseline (dark reference) captured");
   Plotly.react(
     TESTER,

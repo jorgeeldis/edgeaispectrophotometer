@@ -5,7 +5,6 @@ ui = WebUI()
 
 # Global variable to temporarily hold the latest data from the hardware
 latest_hardware_data = []
-print(Bridge.call("sendChannels"))
 
 @ui.sio.on('run_arduino_function')
 async def handle_frontend_request(sid, data=None):
@@ -21,6 +20,19 @@ async def handle_frontend_request(sid, data=None):
     await ui.sio.emit('sendChannels', latest_hardware_data)
 
 def loop():
-    pass
+    try:
+        # Request the channel data string from the Arduino C++ sketch
+        arduino_string = Bridge.call("sendChannels")
+        print(f"Successfully retrieved channel data: {arduino_string}")
+        
+    except ValueError as e:
+        # This catches error code (2) safely during board startup/reboots
+        print("Waiting for Arduino hardware to register 'sendChannels' method...")
+        
+    except Exception as e:
+        print(f"Unexpected connection error: {e}")
+
+    # Wait 1 second before polling again to prevent system lag
+    time.sleep(1)
 
 App.run(user_loop=loop)

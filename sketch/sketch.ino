@@ -71,7 +71,11 @@ void loop()
   }
   Serial.println(); // Moves to a new line
 
-  Bridge.notify("sendChannels", "Example");
+  String sendChannelsFunction() {
+    return "[340, 380, 410, 470, 520, 560]"; // Simulating your raw channel data string
+}
+
+  Bridge.notify("sendChannels", sendChannelsFunction);
 
   Serial.println("---------------------------------------------------------");
 

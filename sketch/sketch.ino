@@ -49,6 +49,16 @@ void setup()
   }
   Serial.println("AutoSmux set to 18 channels.");
 
+  // Set the GAIN to x4
+  if (mySensor.setAgain(AGAIN_4) == false)
+    {
+        Serial.println("Failed to set gain.");
+        Serial.println("Halting...");
+        while (1)
+            ;
+    }
+    Serial.println("Gain set to 512x.");
+
   // Enable Spectral Measurement
   if (mySensor.enableSpectralMeasurement() == false)
   {

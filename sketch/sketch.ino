@@ -59,7 +59,12 @@ void setup()
   }
   Serial.println("Spectral measurement enabled.");
 
-   mySensor.ledOn();
+   
+}
+
+void loop()
+{
+  mySensor.ledOn();
 
   // Read all data registers
   // if it fails, print a failure message and continue
@@ -120,8 +125,4 @@ void setup()
 
   Serial.println("Sent to Python!");
   Serial.println("--------------------------------");
-}
-
-void loop()
-{
 }

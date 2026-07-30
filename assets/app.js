@@ -76,7 +76,7 @@ TESTER = document.getElementById("tester");
 
 // Mock wavelengths (nm) - 14 channels from AS7343
 const wavelengths = [
-  405, 425, 450, 475, 515, 550, 555, 600, 620, 670, 730, 855
+  340, 405, 425, 450, 475, 515, 550, 555, 600, 620, 670, 730, 855, 1000
 ];
 
 const scanSettings = {

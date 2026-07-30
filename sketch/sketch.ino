@@ -77,6 +77,7 @@ void loop()
 
   int channelsRead = mySensor.getData(myData);
 
+  float begin = 0
   float F1 =  mySensor.getChannelData(CH_PURPLE_F1_405NM);
   float F2 =  mySensor.getChannelData(CH_DARK_BLUE_F2_425NM);
   float FZ =  mySensor.getChannelData(CH_BLUE_FZ_450NM);
@@ -89,6 +90,8 @@ void loop()
   float F7 =  mySensor.getChannelData(CH_RED_F7_690NM);
   float F8 =  mySensor.getChannelData(CH_DARK_RED_F8_745NM);
   float NIR =  mySensor.getChannelData(CH_NIR_855NM);
+  float end = 0
+
 
   Serial.println("\n--- Spectral Readings ---");
 
@@ -120,8 +123,8 @@ void loop()
   // Arduino MCU → Python MPU
   Bridge.notify(
       "record_sensor_samples",
-      F1, F2, FZ, F3, F4, F5,
-      FY, FXL, F6, F7, F8, NIR);
+      begin, F1, F2, FZ, F3, F4, F5,
+      FY, FXL, F6, F7, F8, NIR, end);
 
   Serial.println("Sent to Python!");
   Serial.println("--------------------------------");

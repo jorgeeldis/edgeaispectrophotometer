@@ -9,6 +9,7 @@ latest_hardware_data = []
 
 # Arduino MCU → Python MPU
 def record_sensor_samples(
+    begin: float,
     F1: float,
     F2: float,
     FZ: float,
@@ -20,13 +21,14 @@ def record_sensor_samples(
     F6: float,
     F7: float,
     F8: float,
-    NIR: float
+    NIR: float,
+    end: float
 ):
     global latest_hardware_data
 
     latest_hardware_data = [
-        F1, F2, FZ, F3, F4, F5,
-        FY, FXL, F6, F7, F8, NIR
+        begin, F1, F2, FZ, F3, F4, F5,
+        FY, FXL, F6, F7, F8, NIR, end
     ]
 
     print("Received from Arduino:")

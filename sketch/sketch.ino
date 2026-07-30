@@ -72,18 +72,18 @@ void setup()
 
   int channelsRead = mySensor.getData(myData);
 
-  float F1 = myData[0];
-  float F2 = myData[1];
-  float FZ = myData[2];
-  float F3 = myData[3];
-  float F4 = myData[4];
-  float F5 = myData[5];
-  float FY = myData[6];
-  float FXL = myData[7];
-  float F6 = myData[8];
-  float F7 = myData[9];
-  float F8 = myData[10];
-  float NIR = myData[11];
+  float F1 = getChannelData(CH_PURPLE_F1_405NM);
+  float F2 = getChannelData(CH_DARK_BLUE_F2_425NM);
+  float FZ = getChannelData(CH_BLUE_FZ_450NM);
+  float F3 = getChannelData(CH_LIGHT_BLUE_F3_475NM);
+  float F4 = getChannelData(CH_BLUE_F4_515NM);
+  float F5 = getChannelData(CH_GREEN_F5_550NM);
+  float FY = getChannelData(CH_GREEN_FY_555NM);
+  float FXL = getChannelData(CH_ORANGE_FXL_600NM);
+  float F6 = getChannelData(CH_BROWN_F6_640NM);
+  float F7 = getChannelData(CH_RED_F7_690NM);
+  float F8 = getChannelData(CH_DARK_RED_F8_745NM);
+  float NIR = getChannelData(CH_NIR_855NM);
 
   Serial.println("\n--- Spectral Readings ---");
 

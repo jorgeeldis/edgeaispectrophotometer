@@ -62,17 +62,7 @@ void setup()
 
 void loop()
 {
-  mySensor.ledOn();
-  delay(100);
 
-  // Read all data registers
-  // if it fails, print a failure message and continue
-  if (mySensor.readSpectraDataFromSensor() == false)
-  {
-      Serial.println("Failed to read spectral data.");
-  }
-
-  mySensor.ledOff();
   int channelsRead = mySensor.getData(myData);
 
   float F1  = myData[0];

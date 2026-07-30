@@ -72,18 +72,18 @@ void setup()
 
   int channelsRead = mySensor.getData(myData);
 
-  float F1 = getChannelData(CH_PURPLE_F1_405NM);
-  float F2 = getChannelData(CH_DARK_BLUE_F2_425NM);
-  float FZ = getChannelData(CH_BLUE_FZ_450NM);
-  float F3 = getChannelData(CH_LIGHT_BLUE_F3_475NM);
-  float F4 = getChannelData(CH_BLUE_F4_515NM);
-  float F5 = getChannelData(CH_GREEN_F5_550NM);
-  float FY = getChannelData(CH_GREEN_FY_555NM);
-  float FXL = getChannelData(CH_ORANGE_FXL_600NM);
-  float F6 = getChannelData(CH_BROWN_F6_640NM);
-  float F7 = getChannelData(CH_RED_F7_690NM);
-  float F8 = getChannelData(CH_DARK_RED_F8_745NM);
-  float NIR = getChannelData(CH_NIR_855NM);
+  float F1 =  mySensor.getChannelData(CH_PURPLE_F1_405NM);
+  float F2 =  mySensor.getChannelData(CH_DARK_BLUE_F2_425NM);
+  float FZ =  mySensor.getChannelData(CH_BLUE_FZ_450NM);
+  float F3 =  mySensor.getChannelData(CH_LIGHT_BLUE_F3_475NM);
+  float F4 =  mySensor.getChannelData(CH_BLUE_F4_515NM);
+  float F5 =  mySensor.getChannelData(CH_GREEN_F5_550NM);
+  float FY =  mySensor.getChannelData(CH_GREEN_FY_555NM);
+  float FXL =  mySensor.getChannelData(CH_ORANGE_FXL_600NM);
+  float F6 =  mySensor.getChannelData(CH_BROWN_F6_640NM);
+  float F7 =  mySensor.getChannelData(CH_RED_F7_690NM);
+  float F8 =  mySensor.getChannelData(CH_DARK_RED_F8_745NM);
+  float NIR =  mySensor.getChannelData(CH_NIR_855NM);
 
   Serial.println("\n--- Spectral Readings ---");
 

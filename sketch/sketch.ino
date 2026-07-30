@@ -49,7 +49,7 @@ void setup()
   }
   Serial.println("AutoSmux set to 18 channels.");
 
-   if (mySensor.setAgain(AGAIN_512) == false)
+   if (mySensor.setAgain(AGAIN_128) == false)
     {
         Serial.println("Failed to set gain.");
         Serial.println("Halting...");

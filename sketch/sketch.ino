@@ -1,11 +1,16 @@
 #include <Adafruit_AS7343.h>
 #include <Arduino_RouterBridge.h>
+#include <SparkFun_AS7343.h>
 
+SfeAS7343ArdI2C mySensor;
 Adafruit_AS7343 as7343;
+
+uint16_t myData[ksfAS7343NumChannels]; // Array to hold spectral data
 
 void setup()
 {
   Serial.begin(9600);
+  Wire.begin();
   Bridge.begin();
 
   while (!Serial)
@@ -13,46 +18,75 @@ void setup()
 
   Serial.println("Initializing AS7343...");
 
-  if (!as7343.begin())
-  {
-    Serial.println("Error: Could not find AS7343 sensor!");
+  // Initialize sensor and run default setup.
+    if (mySensor.begin() == false)
+    {
+        Serial.println("Sensor failed to begin. Please check your wiring!");
+        Serial.println("Halting...");
+        while (1)
+            ;
+    }
 
-    while (1)
-      delay(10);
-  }
+    Serial.println("Sensor began.");
 
-  as7343.setGain(AS7343_GAIN_4X);
-  as7343.setATIME(19);
-  as7343.setASTEP(99);
+    // Power on the device
+    if (mySensor.powerOn() == false)
+    {
+        Serial.println("Failed to power on the device.");
+        Serial.println("Halting...");
+        while (1)
+            ;
+    }
+    Serial.println("Device powered on.");
 
-  Serial.println("AS7343 successfully initialized!");
+    // Set the AutoSmux to output all 18 channels
+    if (mySensor.setAutoSmux(AUTOSMUX_18_CHANNELS) == false)
+    {
+        Serial.println("Failed to set AutoSmux.");
+        Serial.println("Halting...");
+        while (1)
+            ;
+    }
+    Serial.println("AutoSmux set to 18 channels.");
+
+    // Enable Spectral Measurement
+    if (mySensor.enableSpectralMeasurement() == false)
+    {
+        Serial.println("Failed to enable spectral measurement.");
+        Serial.println("Halting...");
+        while (1)
+            ;
+    }
+    Serial.println("Spectral measurement enabled.");
 }
 
 void loop()
 {
-  uint16_t readings[14];
+  mySensor.ledOn();
+  delay(100);
 
-  as7343.startMeasurement();
-
-  while (!as7343.dataReady())
+  // Read all data registers
+  // if it fails, print a failure message and continue
+  if (mySensor.readSpectraDataFromSensor() == false)
   {
-    delay(1);
+      Serial.println("Failed to read spectral data.");
   }
 
-  as7343.readAllChannels(readings);
+  mySensor.ledOff();
+  int channelsRead = mySensor.getData(myData);
 
-  float F1  = readings[AS7343_CHANNEL_F1];
-  float F2  = readings[AS7343_CHANNEL_F2];
-  float FZ  = readings[AS7343_CHANNEL_FZ];
-  float F3  = readings[AS7343_CHANNEL_F3];
-  float F4  = readings[AS7343_CHANNEL_F4];
-  float F5  = readings[AS7343_CHANNEL_F5];
-  float FY  = readings[AS7343_CHANNEL_FY];
-  float FXL = readings[AS7343_CHANNEL_FXL];
-  float F6  = readings[AS7343_CHANNEL_F6];
-  float F7  = readings[AS7343_CHANNEL_F7];
-  float F8  = readings[AS7343_CHANNEL_F8];
-  float NIR = readings[AS7343_CHANNEL_NIR];
+  float F1  = myData[0];
+  float F2  = myData[1];
+  float FZ  = myData[2];
+  float F3  = myData[3];
+  float F4  = myData[4];
+  float F5  = myData[5];
+  float FY  = myData[6];
+  float FXL = myData[7];
+  float F6  = myData[8];
+  float F7  = myData[9];
+  float F8  = myData[10];
+  float NIR = myData[11];
 
   Serial.println("\n--- Spectral Readings ---");
 
@@ -79,5 +113,5 @@ void loop()
   Serial.println("Sent to Python!");
   Serial.println("--------------------------------");
 
-  delay(2000);
+  delay(100);
 }

@@ -68,7 +68,7 @@ void setup()
     Serial.println("Failed to read spectral data.");
   }
 
-  delay(2000)
+  delay(2000);
 
   int channelsRead = mySensor.getData(myData);
 

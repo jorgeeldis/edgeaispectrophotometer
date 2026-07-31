@@ -185,8 +185,6 @@ baselineBtn?.addEventListener("click", captureBaseline);
 singleScanBtn?.addEventListener("click", runSingleScan);
 continuousBtn?.addEventListener("click", toggleContinuousScan);
 saveDataBtn?.addEventListener("click", saveDataAsCsv);
-settingsBtn?.addEventListener("click", openSettingsModal);
-settingsCancelBtn?.addEventListener("click", closeSettingsModal);
 settingsSaveBtn?.addEventListener("click", saveSettings);
 settingsModal?.addEventListener("click", (e) => {
   if (e.target === settingsModal) closeSettingsModal();
@@ -242,18 +240,6 @@ function saveDataAsCsv() {
   setScanStatus("Scan data saved to CSV");
 }
 
-function openSettingsModal() {
-  console.log("hi");
-  integrationTimeInput.value = scanSettings.integrationTimeMs;
-  gainSelect.value = scanSettings.gain;
-  averagingInput.value = scanSettings.averaging;
-  settingsModal.classList.remove("hidden");
-}
-
-function closeSettingsModal() {
-  settingsModal.classList.add("hidden");
-}
-
 function saveSettings() {
   scanSettings.integrationTimeMs =
     Number(integrationTimeInput.value) || scanSettings.integrationTimeMs;
@@ -262,8 +248,7 @@ function saveSettings() {
     1,
     Number(averagingInput.value) || scanSettings.averaging,
   );
-  closeSettingsModal();
-  setScanStatus("Settings updated");
+  console.log("Settings updated");
 }
 
 function switchTab(event, tabId) {

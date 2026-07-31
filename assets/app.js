@@ -22,6 +22,7 @@ socket.on("sendChannels", (baselineData) => {
   // Store the real sensor array into your state
   scanState.baseline = baselineData;
   setScanStatus("Baseline (dark reference) captured from hardware!");
+  console.log(scanState.baseline)
   
   // Redraw your Plotly graph with the real sensor data array
   Plotly.react(
@@ -41,6 +42,34 @@ socket.on("sendChannels", (baselineData) => {
     RETRO_CONFIG,
   );
 });
+
+const RETRO_LAYOUT_BASELINE = {
+  paper_bgcolor: "rgba(0,0,0,0)",
+  plot_bgcolor: "rgba(0,0,0,0)",
+  margin: { t: 14, l: 52, r: 16, b: 42 },
+  autosize: true,
+  height: 330,
+  font: {
+    family: "ui-monospace, Menlo, Consolas, monospace",
+    size: 14,
+    color: "#8FA98B",
+  },
+  xaxis: {
+    title: { text: "WAVELENGTH (nm)", font: { size: 14 } },
+    gridcolor: "rgba(143,169,139,.16)",
+    zerolinecolor: "rgba(143,169,139,.3)",
+    linecolor: "rgba(143,169,139,.4)",
+    tickfont: { size: 14 },
+  },
+  yaxis: {
+    title: { text: "AMPLITUDE (mW/cm)", font: { size: 14 } },
+    gridcolor: "rgba(143,169,139,.16)",
+    zerolinecolor: "rgba(143,169,139,.3)",
+    linecolor: "rgba(143,169,139,.4)",
+    tickfont: { size: 14 },
+  },
+  showlegend: false,
+};
 
 const RETRO_LAYOUT = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -153,7 +182,7 @@ function captureBaseline() {
         marker: { color: "#FFD08A", size: 5 },
       },
     ],
-    RETRO_LAYOUT,
+    RETRO_LAYOUT_BASELINE,
     RETRO_CONFIG,
   );
 }

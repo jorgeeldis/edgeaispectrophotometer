@@ -2,16 +2,17 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
+let continuousIntervalId;
+
 const socket = io();
 const scanState = {
   baseline: [], // dark-reference reading, per channel
   lastScan: [], // { raw, absorbance, timestamp }
-  continuousInterval: [],
 };
 
 socket.on("sendBaseline", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
-  
+
   // Guard clause: Make sure we actually received valid array data
   if (!baselineData || !Array.isArray(baselineData)) {
     console.error("Expected an array but received:", baselineData);
@@ -22,7 +23,7 @@ socket.on("sendBaseline", (baselineData) => {
   // Store the real sensor array into your state
   scanState.baseline = baselineData;
   setScanStatus("Baseline (dark reference) captured from hardware!");
-  
+
   // Redraw your Plotly graph with the real sensor data array
   Plotly.react(
     TESTER,
@@ -44,7 +45,7 @@ socket.on("sendBaseline", (baselineData) => {
 
 socket.on("sendSingleScan", (singleScanData) => {
   console.log("Received single scan from Arduino:", singleScanData);
-  
+
   // Guard clause: Make sure we actually received valid array data
   if (!singleScanData || !Array.isArray(singleScanData)) {
     console.error("Expected an array but received:", singleScanData);
@@ -53,7 +54,7 @@ socket.on("sendSingleScan", (singleScanData) => {
   // Store the real sensor array into your state
   scanState.lastScan = singleScanData;
   setScanStatus("Single scan captured from hardware!");
-  
+
   // Redraw your Plotly graph with the real sensor data array
   Plotly.react(
     TESTER,
@@ -135,7 +136,7 @@ TESTER = document.getElementById("tester");
 
 // Mock wavelengths (nm) - 14 channels from AS7343
 const wavelengths = [
-  340, 405, 425, 450, 475, 515, 550, 555, 600, 620, 670, 730, 855, 1000
+  340, 405, 425, 450, 475, 515, 550, 555, 600, 620, 670, 730, 855, 1000,
 ];
 
 const scanSettings = {
@@ -161,6 +162,7 @@ const gainSelect = document.getElementById("setting-gain");
 const averagingInput = document.getElementById("setting-averaging");
 
 saveDataBtn.disabled = true;
+isContinuous = false;
 
 Plotly.newPlot(
   TESTER,
@@ -196,31 +198,27 @@ function setScanStatus(text) {
 
 function captureBaseline() {
   socket.emit("run_arduino_function", {});
-  document.getElementById("readout-title").textContent = "Peak Amplitude"
+  document.getElementById("readout-title").textContent = "Peak Amplitude";
 }
 
 function runSingleScan() {
   socket.emit("get_single_scan", {});
-  document.getElementById("readout-title").textContent = "Peak Absorbance"
+  document.getElementById("readout-title").textContent = "Peak Absorbance";
 }
 
 function toggleContinuousScan() {
-  document.getElementById("readout-title").textContent = "Peak Absorbance"
-  if (scanState.continuousInterval) {
-    stopContinuousScan();
-    return;
+  document.getElementById("readout-title").textContent = "Peak Absorbance";
+
+  if (continuousBtn.textContent === "Continuous") {
+    continuousIntervalId = setInterval(() => {
+      socket.emit("get_single_scan", {});
+    }, 2000);
+    continuousBtn.textContent = "Stop";
+  } else {
+    clearInterval(continuousIntervalId);
+    continuousIntervalId = null;
+    continuousBtn.textContent = "Continuous";
   }
-  continuousBtn.textContent = "Stop";
-
-  scanState.continuousInterval = setInterval(() => {
-    socket.emit("get_single_scan", {});
-  }, 2000);
-}
-
-function stopContinuousScan() {
-  clearInterval(scanState.continuousInterval);
-  scanState.continuousInterval = null;
-  continuousBtn.textContent = "CONTINUOUS";
 }
 
 function saveDataAsCsv() {

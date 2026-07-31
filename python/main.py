@@ -49,6 +49,8 @@ Bridge.provide(
 @ui.sio.on('run_arduino_function')
 async def handle_frontend_request(sid, data=None):
 
+    global baseline 
+
     baseline = latest_hardware_data
 
     print("Frontend requested hardware baseline scan...")
@@ -69,7 +71,7 @@ async def frontend_request_single_scan(sid, data=None):
     print("This is baseline: ", baseline)
     print("This is latest: ", latest_hardware_data)
 
-    lastScan = np.array(latest_hardware_data) * 35
+    lastScan = [baseline[i] * latest_hardware_data[i] for i in range(len(baseline))]
 
     print("Frontend requested hardware single scan...")
 

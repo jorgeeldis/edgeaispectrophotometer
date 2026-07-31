@@ -195,56 +195,32 @@ function setScanStatus(text) {
 }
 
 function captureBaseline() {
-  setScanStatus("Requesting baseline scan...");
-  // Signal Python to trigger the hardware
   socket.emit("run_arduino_function", {});
-  setScanStatus("Baseline (dark reference) captured");
+  document.getElementById("readout-title").textContent = "Peak Amplitude"
 }
 
 function runSingleScan() {
-  setScanStatus("Requesting single scan...");
-  // Signal Python to trigger the hardware
   socket.emit("get_single_scan", {});
-  setScanStatus("Single scan captured");
+  document.getElementById("readout-title").textContent = "Peak Absorbance"
 }
 
 function toggleContinuousScan() {
+  document.getElementById("readout-title").textContent = "Peak Absorbance"
   if (scanState.continuousInterval) {
     stopContinuousScan();
     return;
   }
-
-  setScanStatus("Continuous scan running...");
   continuousBtn.textContent = "Stop";
+
   scanState.continuousInterval = setInterval(() => {
-    const raw = readSensorChannels();
-    const absorbance = computeAbsorbance(raw);
-    scanState.lastScan = { raw, absorbance, timestamp: new Date() };
-    saveDataBtn.disabled = false;
-    Plotly.react(
-      TESTER,
-      [
-        {
-          x: wavelengths,
-          y: absorbance,
-          type: "scatter",
-          mode: "lines+markers",
-          name: "Absorbance",
-          line: { color: "#FFB347", width: 2, shape: "spline" },
-          marker: { color: "#FFD08A", size: 5 },
-        },
-      ],
-      RETRO_LAYOUT,
-      RETRO_CONFIG,
-    );
-  }, 500);
+    socket.emit("get_single_scan", {});
+  }, 2000);
 }
 
 function stopContinuousScan() {
   clearInterval(scanState.continuousInterval);
   scanState.continuousInterval = null;
   continuousBtn.textContent = "CONTINUOUS";
-  setScanStatus("Continuous scan stopped");
 }
 
 function saveDataAsCsv() {

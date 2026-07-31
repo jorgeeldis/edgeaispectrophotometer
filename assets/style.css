@@ -545,7 +545,7 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
 
 /* ---------- 7-inch touchscreen (1024x600) ---------- */
 
-@media (max-width: 1100px), (max-height: 680px) {
+@media (max-width: 1100px), (max-height: 1200px) {
   body.retro { padding: 6px; }
   .wrapper { padding: 12px 14px 14px; border-radius: 6px; }
   .brand-plate { margin-bottom: 10px; padding: 6px 10px; }

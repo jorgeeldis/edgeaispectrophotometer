@@ -1,4 +1,3 @@
-#include <Adafruit_AS7343.h>
 #include <Arduino_RouterBridge.h>
 #include <SparkFun_AS7343.h>
 

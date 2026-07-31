@@ -2,7 +2,6 @@
 #include <SparkFun_AS7343.h>
 
 SfeAS7343ArdI2C mySensor;
-Adafruit_AS7343 as7343;
 
 uint16_t myData[ksfAS7343NumChannels]; // Array to hold spectral data
 

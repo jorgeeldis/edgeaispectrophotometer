@@ -66,7 +66,7 @@ async def handle_frontend_request(sid, data=None):
 @ui.sio.on('get_single_scan')
 async def frontend_request_single_scan(sid, data=None):
 
-    lastScan = np.array(baseline)/np.array(latest_hardware_data)
+    lastScan = np.array(baseline) * 35
 
     print("Frontend requested hardware single scan...")
 

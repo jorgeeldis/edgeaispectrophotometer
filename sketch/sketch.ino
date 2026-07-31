@@ -85,7 +85,7 @@ void loop()
 
   int channelsRead = mySensor.getData(myData);
 
-  float begin = 0;
+  float begin = 0.0001;
   float F1 =  mySensor.getChannelData(CH_PURPLE_F1_405NM);
   float F2 =  mySensor.getChannelData(CH_DARK_BLUE_F2_425NM);
   float FZ =  mySensor.getChannelData(CH_BLUE_FZ_450NM);
@@ -98,7 +98,7 @@ void loop()
   float F7 =  mySensor.getChannelData(CH_RED_F7_690NM);
   float F8 =  mySensor.getChannelData(CH_DARK_RED_F8_745NM);
   float NIR =  mySensor.getChannelData(CH_NIR_855NM);
-  float end = 0;
+  float end = 0.0001;
 
 
   Serial.println("\n--- Spectral Readings ---");

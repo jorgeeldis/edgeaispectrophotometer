@@ -9,7 +9,7 @@ const scanState = {
   continuousInterval: [],
 };
 
-socket.on("sendChannels", (baselineData) => {
+socket.on("sendBaseline", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
   
   // Guard clause: Make sure we actually received valid array data
@@ -22,7 +22,6 @@ socket.on("sendChannels", (baselineData) => {
   // Store the real sensor array into your state
   scanState.baseline = baselineData;
   setScanStatus("Baseline (dark reference) captured from hardware!");
-  console.log(scanState.baseline)
   
   // Redraw your Plotly graph with the real sensor data array
   Plotly.react(
@@ -30,7 +29,38 @@ socket.on("sendChannels", (baselineData) => {
     [
       {
         x: wavelengths,
-        y: scanState.baseline, // Plotly demands a clean 1D array here (e.g. [12, 15, 23...])
+        y: scanState.baseline,
+        type: "scatter",
+        mode: "lines+markers",
+        name: "Absorbance",
+        line: { color: "#FFB347", width: 2, shape: "spline" },
+        marker: { color: "#FFD08A", size: 5 },
+      },
+    ],
+    RETRO_LAYOUT_BASELINE,
+    RETRO_CONFIG,
+  );
+});
+
+socket.on("sendSingleScan", (singleScanData) => {
+  console.log("Received single scan from Arduino:", singleScanData);
+  
+  // Guard clause: Make sure we actually received valid array data
+  if (!singleScanData || !Array.isArray(singleScanData)) {
+    console.error("Expected an array but received:", singleScanData);
+  }
+
+  // Store the real sensor array into your state
+  scanState.lastScan = singleScanData;
+  setScanStatus("Single scan captured from hardware!");
+  
+  // Redraw your Plotly graph with the real sensor data array
+  Plotly.react(
+    TESTER,
+    [
+      {
+        x: wavelengths,
+        y: scanState.lastScan,
         type: "scatter",
         mode: "lines+markers",
         name: "Absorbance",
@@ -169,50 +199,13 @@ function captureBaseline() {
   // Signal Python to trigger the hardware
   socket.emit("run_arduino_function", {});
   setScanStatus("Baseline (dark reference) captured");
-  Plotly.react(
-    TESTER,
-    [
-      {
-        x: wavelengths,
-        y: scanState.baseline,
-        type: "scatter",
-        mode: "lines+markers",
-        name: "Absorbance",
-        line: { color: "#FFB347", width: 2, shape: "spline" },
-        marker: { color: "#FFD08A", size: 5 },
-      },
-    ],
-    RETRO_LAYOUT_BASELINE,
-    RETRO_CONFIG,
-  );
 }
 
 function runSingleScan() {
-  const raw = readSensorChannels();
-  const absorbance = computeAbsorbance(raw);
-  scanState.lastScan = { raw, absorbance, timestamp: new Date() };
-  saveDataBtn.disabled = false;
-  setScanStatus(
-    scanState.baseline
-      ? "Single scan complete (baseline-corrected)"
-      : "Single scan complete (no baseline captured)",
-  );
-  Plotly.react(
-    TESTER,
-    [
-      {
-        x: wavelengths,
-        y: absorbance,
-        type: "scatter",
-        mode: "lines+markers",
-        name: "Absorbance",
-        line: { color: "#FFB347", width: 2, shape: "spline" },
-        marker: { color: "#FFD08A", size: 5 },
-      },
-    ],
-    RETRO_LAYOUT,
-    RETRO_CONFIG,
-  );
+  setScanStatus("Requesting single scan...");
+  // Signal Python to trigger the hardware
+  socket.emit("get_single_scan", {});
+  setScanStatus("Single scan captured");
 }
 
 function toggleContinuousScan() {

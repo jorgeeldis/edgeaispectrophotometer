@@ -1,5 +1,6 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
+import numpy as np
 
 ui = WebUI()
 
@@ -65,9 +66,9 @@ async def handle_frontend_request(sid, data=None):
 @ui.sio.on('get_single_scan')
 async def frontend_request_single_scan(sid, data=None):
 
-    lastScan = baseline/latest_hardware_data
+    lastScan = np.array(baseline)/np.array(latest_hardware_data)
 
-    print("Frontend requested hardware single scan scan...")
+    print("Frontend requested hardware single scan...")
 
     print(
         f"Sending data to frontend: "

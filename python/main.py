@@ -1,6 +1,7 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
 import numpy as np
+import math
 
 ui = WebUI()
 
@@ -71,7 +72,7 @@ async def frontend_request_single_scan(sid, data=None):
     print("This is baseline: ", baseline)
     print("This is latest: ", latest_hardware_data)
 
-    lastScan = [baseline[i] * latest_hardware_data[i] for i in range(len(baseline))]
+    lastScan = [math.log10(baseline[i] / latest_hardware_data[i]) for i in range(len(baseline))]
 
     print("Frontend requested hardware single scan...")
 

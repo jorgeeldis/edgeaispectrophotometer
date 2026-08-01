@@ -9,6 +9,7 @@ const scanState = {
   baseline: [], // dark-reference reading, per channel
   lastScan: [], // { raw, absorbance, timestamp }
 };
+darkStd = 0;
 
 socket.on("sendBaseline", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
@@ -22,6 +23,9 @@ socket.on("sendBaseline", (baselineData) => {
 
   // Store the real sensor array into your state
   scanState.baseline = baselineData;
+  maxValue = Math.max(...baselineData);
+  minValue = Math.min(...baselineData);
+  meanValue = baselineData.reduce((a, b) => a + b, 0) / baselineData.length;
   setScanStatus("Baseline (dark reference) captured from hardware!");
 
   // Redraw your Plotly graph with the real sensor data array
@@ -53,6 +57,9 @@ socket.on("sendSingleScan", (singleScanData) => {
 
   // Store the real sensor array into your state
   scanState.lastScan = singleScanData;
+  maxValue = Math.max(...singleScanData);
+  minValue = Math.min(...singleScanData);
+  meanValue = singleScanData.reduce((a, b) => a + b, 0) / singleScanData.length;
   setScanStatus("Single scan captured from hardware!");
 
   // Redraw your Plotly graph with the real sensor data array
@@ -151,7 +158,6 @@ const continuousBtn = document.getElementById("continuous-btn");
 const saveDataBtn = document.getElementById("save-data-btn");
 const settingsBtn = document.getElementById("settings-btn");
 const scanStatus = document.getElementById("scan-status");
-
 const settingsModal = document.getElementById("settings-modal");
 const settingsCancelBtn = document.getElementById("settings-cancel-btn");
 const settingsSaveBtn = document.getElementById("settings-save-btn");
@@ -197,11 +203,23 @@ function setScanStatus(text) {
 function captureBaseline() {
   socket.emit("run_arduino_function", {});
   document.getElementById("readout-title").textContent = "Peak Amplitude";
+  document.getElementById("rd-max").textContent = "Max: " + maxValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(maxValue)] + " nm";
+  document.getElementById("rd-min").textContent = "Min: " + minValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(minValue)] + " nm";
+  document.getElementById("rd-mean").textContent = "Mean: " + meanValue.toFixed(4) + "mW";
+  document.getElementById("rd-noise").textContent = "Noise: " + noiseValue.toFixed(4) + " mW";
+  document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
+
 }
 
 function runSingleScan() {
   socket.emit("get_single_scan", {});
   document.getElementById("readout-title").textContent = "Peak Absorbance";
+  document.getElementById("rd-max").textContent = "Max: " + maxValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(maxValue)] + " nm";
+  document.getElementById("rd-min").textContent = "Min: " + minValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(minValue)] + " nm";
+  document.getElementById("rd-mean").textContent = "Mean: " + meanValue.toFixed(4) + "dB";
+  document.getElementById("rd-noise").textContent = "Noise: " + noiseValue.toFixed(4) + " dB";
+  document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
+
 }
 
 function toggleContinuousScan() {

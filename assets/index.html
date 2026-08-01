@@ -67,7 +67,7 @@ SPDX-License-Identifier: MPL-2.0
           <div class="readout-row"><span>MAX</span><strong id="rd-max">— dB @ — nm</strong></div>
           <div class="readout-row"><span>MIN</span><strong id="rd-min">— dB @ — nm</strong></div>
           <div class="readout-row"><span>MEAN</span><strong id="rd-mean">—</strong></div>
-          <div class="readout-row"><span>NOISE σ</span><strong id="rd-noise">—</strong></div>
+          <div class="readout-row"><span>NOISE σ</span><strong id="rd-noise">0 dB</strong></div>
           <h4 style="margin-top:14px">Acquisition</h4>
           <div class="readout-row"><span>GAIN</span><strong id="rd-gain">4×</strong></div>
           <div class="readout-row"><span>INT. TIME</span><strong id="rd-int">100 ms</strong></div>
@@ -364,6 +364,7 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="col">Name</th>
                   <th scope="col">Category</th>
                   <th scope="col">Dev σ</th>
+                  <th scope="col">Pred</th>
                   <th scope="col">Conf</th>
                   <th scope="col">Status</th>
                 </tr>
@@ -373,6 +374,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -380,6 +383,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -387,6 +392,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -394,6 +401,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -401,6 +410,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -408,6 +419,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -415,6 +428,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -422,6 +437,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -429,6 +446,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -436,6 +455,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -443,6 +464,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -450,6 +473,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -457,6 +482,8 @@ SPDX-License-Identifier: MPL-2.0
                   <th scope="row">Coffee1</th>
                   <td>Coffee</td>
                   <td>0.86</td>
+                  <td>0.86</td>
+
                   <td>97%</td>
                   <td class="pass">PASS</td>
                 </tr>
@@ -674,6 +701,9 @@ SPDX-License-Identifier: MPL-2.0
             </label>
             <label class="modal-field">Sample Averaging
               <input type="number" id="setting-averaging" min="1" step="1" value="10" />
+            </label>
+            <label class="modal-field">Known Value
+              <input type="text" id="known-value" />
             </label>
           </div>
           <div class="modal-footer">

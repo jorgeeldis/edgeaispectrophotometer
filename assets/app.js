@@ -47,10 +47,10 @@ socket.on("sendBaseline", (baselineData) => {
   );
 
   document.getElementById("readout-title").textContent = "Peak Amplitude";
-  document.getElementById("rd-max").textContent = "Max: " + maxValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(maxValue)] + " nm";
-  document.getElementById("rd-min").textContent = "Min: " + minValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(minValue)] + " nm";
-  document.getElementById("rd-mean").textContent = "Mean: " + meanValue.toFixed(4) + "mW";
-  document.getElementById("rd-noise").textContent = "Noise: " + noiseValue.toFixed(4) + " mW";
+  document.getElementById("rd-max").textContent = maxValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(maxValue)] + " nm";
+  document.getElementById("rd-min").textContent = minValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(minValue)] + " nm";
+  document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "mW";
+  document.getElementById("rd-noise").textContent = noiseValue.toFixed(4) + " mW";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
@@ -89,10 +89,10 @@ socket.on("sendSingleScan", (singleScanData) => {
   );
   
   document.getElementById("readout-title").textContent = "Peak Absorbance";
-  document.getElementById("rd-max").textContent = "Max: " + maxValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(maxValue)] + " nm";
-  document.getElementById("rd-min").textContent = "Min: " + minValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(minValue)] + " nm";
-  document.getElementById("rd-mean").textContent = "Mean: " + meanValue.toFixed(4) + "dB";
-  document.getElementById("rd-noise").textContent = "Noise: " + noiseValue.toFixed(4) + " dB";
+  document.getElementById("rd-max").textContent = maxValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(maxValue)] + " nm";
+  document.getElementById("rd-min").textContent = minValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(minValue)] + " nm";
+  document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "dB";
+  document.getElementById("rd-noise").textContent = noiseValue.toFixed(4) + " dB";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 

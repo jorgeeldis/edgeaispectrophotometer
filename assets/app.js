@@ -60,6 +60,7 @@ socket.on("sendSingleScan", (singleScanData) => {
   maxValue = Math.max(...singleScanData);
   minValue = Math.min(...singleScanData);
   meanValue = singleScanData.reduce((a, b) => a + b, 0) / singleScanData.length;
+  noiseValue = 0;
   setScanStatus("Single scan captured from hardware!");
 
   // Redraw your Plotly graph with the real sensor data array
@@ -202,10 +203,10 @@ function setScanStatus(text) {
 
 function captureBaseline() {
   socket.emit("run_arduino_function", {});
-  console.log("Max Value: ", maxValue);
-  console.log("Min Value: ", minValue);
-  console.log("Mean Value: ", meanValue);
-  console.log("Noise Value: ", noiseValue);
+  console.log("Max Value: ", maxValue.toFixed(4) );
+  console.log("Min Value: ", minValue.toFixed(4) );
+  console.log("Mean Value: ", meanValue.toFixed(4) );
+  console.log("Noise Value: ", noiseValue.toFixed(4) );
   document.getElementById("readout-title").textContent = "Peak Amplitude";
   document.getElementById("rd-max").textContent = "Max: " + maxValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(maxValue)] + " nm";
   document.getElementById("rd-min").textContent = "Min: " + minValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(minValue)] + " nm";
@@ -217,10 +218,10 @@ function captureBaseline() {
 
 function runSingleScan() {
   socket.emit("get_single_scan", {});
-  console.log("Max Value: ", maxValue);
-  console.log("Min Value: ", minValue);
-  console.log("Mean Value: ", meanValue);
-  console.log("Noise Value: ", noiseValue);
+  console.log("Max Value: ", maxValue.toFixed(4));
+  console.log("Min Value: ", minValue.toFixed(4));
+  console.log("Mean Value: ", meanValue.toFixed(4));
+  console.log("Noise Value: ", noiseValue.toFixed(4));
   document.getElementById("readout-title").textContent = "Peak Absorbance";
   document.getElementById("rd-max").textContent = "Max: " + maxValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(maxValue)] + " nm";
   document.getElementById("rd-min").textContent = "Min: " + minValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(minValue)] + " nm";

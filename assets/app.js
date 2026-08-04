@@ -11,11 +11,6 @@ const scanState = {
 };
 darkStd = 0;
 
-const maxValue = 0;
-const minValue = 0;
-const meanValue = 0;
-const noiseValue = 0;
-
 socket.on("sendBaseline", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
 

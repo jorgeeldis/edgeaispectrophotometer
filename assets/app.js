@@ -290,3 +290,11 @@ function switchTab(event, tabId) {
 const ui = new WebUI();
 ui.on_connect(onUIConnected);
 ui.on_disconnect(onUIDisconnected);
+
+function switchSubTab(event, panelId) {
+  const container = event.currentTarget.closest(".tab-panel");
+  container.querySelectorAll(".subtab-panel").forEach((p) => p.classList.remove("active"));
+  container.querySelectorAll(".subtab-btn").forEach((b) => b.classList.remove("active"));
+  container.querySelector("#" + panelId).classList.add("active");
+  event.currentTarget.classList.add("active");
+}

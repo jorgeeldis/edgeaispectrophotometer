@@ -421,6 +421,17 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
   overflow-y: auto;
 }
 
+.metric-card-help {
+  padding: 14px 16px;
+  height: 300px; 
+  text-align: left;
+  background: linear-gradient(180deg, var(--case-light), var(--case));
+  border: 1px solid var(--case-dark);
+  border-radius: 5px;
+  box-shadow: var(--bevel-up);
+  overflow-y: auto;
+}
+
 .metric-card p {
   display: flex;
   justify-content: space-between;
@@ -653,3 +664,56 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
 /* Transform tables to cards for very narrow screens if JS sets .cardify */
 .table.cardify tbody tr { display: block; margin-bottom: 8px; border-bottom: none; }
 .table.cardify tbody td, .table.cardify tbody th { display: block; text-align: left; padding: 8px 10px !important; border-right: none !important; }
+/* ---------- Sub-tabs (nested inside a tab-panel) ---------- */
+
+.subtab-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 4px;
+  margin-bottom: var(--gap-sm);
+  background: var(--case);
+  border: 1px solid var(--case-dark);
+  border-radius: 4px;
+  box-shadow: var(--bevel-in);
+}
+
+.subtab-btn {
+  flex: 1 1 88px;
+  min-height: calc(var(--tap) * .8);
+  padding: 8px 6px;
+  font-family: var(--label);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: linear-gradient(180deg, var(--case-light), var(--case));
+  border: 1px solid var(--case-dark);
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: var(--bevel-up);
+  transition: background .12s, transform .04s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.subtab-btn:hover  { background: linear-gradient(180deg, #F5F0E3, var(--case-light)); }
+.subtab-btn:active { transform: translateY(1px); }
+.subtab-btn:focus-visible { outline: 2px solid var(--lamp-amber); outline-offset: 1px; }
+
+.subtab-btn.active {
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--case-mid), var(--case-dark));
+  box-shadow: var(--bevel-in);
+}
+
+.subtab-panel { display: none; animation: fade .16s ease-out; }
+.subtab-panel.active { display: block; }
+
+@media (hover: none) {
+  .subtab-btn:hover { background: inherit; }
+}
+
+@media (max-width: 480px) {
+  .subtab-btn { flex: 1 1 calc(50% - 3px); }
+}

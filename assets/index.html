@@ -44,9 +44,9 @@ SPDX-License-Identifier: MPL-2.0
       <button class="tab-btn active" onclick="switchTab(event, 'tab1')">Home</button>
       <button class="tab-btn" onclick="switchTab(event, 'tab2')">Measures</button>
       <button class="tab-btn" onclick="switchTab(event, 'tab3')">Analysis</button>
-      <button class="tab-btn" onclick="switchTab(event, 'tab4')">Maintenance</button>
-      <button class="tab-btn" onclick="switchTab(event, 'tab5')">Reports</button>
-      <button class="tab-btn" onclick="switchTab(event, 'tab6')">Chat</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab4')">Reports</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab5')">Chat</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab6')">Maintenance</button>
       <button class="tab-btn" onclick="switchTab(event, 'tab7')">Help</button>
     </div>
 
@@ -505,33 +505,8 @@ SPDX-License-Identifier: MPL-2.0
       </div>
     </div>
 
-    <!-- MAINTENANCE -->
-    <div id="tab4" class="tab-panel">
-      <h3>Device Health</h3>
-      <div class="row">
-        <div class="col">
-          <div class="metric-card">
-            <p><strong>System Status</strong></p>
-            <p>Calibration <strong><span class="pill attention">Attention</span></strong></p>
-            <p>Sensor <strong><span class="pill good">Healthy</span></strong></p>
-            <p>Internal Temp <strong>31.4 °C</strong></p>
-            <p>LED Hours <strong>142 h</strong></p>
-            <p>Firmware <strong>v0.4.1</strong></p>
-          </div>
-        </div>
-        <div class="col">
-          <div class="metric-card">
-            <p><strong>Recommended Actions</strong></p>
-            <p>Dark reference age <strong>18 h</strong></p>
-            <p>Baseline drift <strong>1.4 %</strong></p>
-            <p>Next service <strong>~58 h</strong></p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- REPORTS -->
-    <div id="tab5" class="tab-panel">
+    <div id="tab4" class="tab-panel">
       <h3>Compliance Reports</h3>
       <div class="row">
         <div class="col">
@@ -617,7 +592,7 @@ SPDX-License-Identifier: MPL-2.0
     </div>
 
     <!-- CHAT -->
-    <div id="tab6" class="tab-panel">
+    <div id="tab5" class="tab-panel">
       <h3>Analysis Assistant</h3>
       <div class="scope-well" style="min-height:280px">
         <div id="chat-log" style="height:314px;overflow-y:auto;font-family:var(--data);
@@ -632,33 +607,137 @@ SPDX-License-Identifier: MPL-2.0
       </div>
     </div>
 
+    <!-- MAINTENANCE -->
+    <div id="tab6" class="tab-panel">
+      <h3>Device Health</h3>
+      <div class="row">
+        <div class="col">
+          <div class="metric-card">
+            <p><strong>System Status</strong></p>
+            <p>Calibration <strong><span class="pill attention">Attention</span></strong></p>
+            <p>Sensor <strong><span class="pill good">Healthy</span></strong></p>
+            <p>Internal Temp <strong>31.4 °C</strong></p>
+            <p>LED Hours <strong>142 h</strong></p>
+            <p>Firmware <strong>v0.4.1</strong></p>
+          </div>
+        </div>
+        <div class="col">
+          <div class="metric-card">
+            <p><strong>Recommended Actions</strong></p>
+            <p>Dark reference age <strong>18 h</strong></p>
+            <p>Baseline drift <strong>1.4 %</strong></p>
+            <p>Next service <strong>~58 h</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- HELP -->
     <div id="tab7" class="tab-panel">
-      <h3>Operating Guide</h3>
-      <div class="metric-card">
-        <p><strong>Quick Start</strong></p>
-        <p><strong>HOME Tab</strong></p>
-        <p>1 - Baseline: Insert reference cuvette for baseline, distilled water is recommended</p>
-        <p>2 - Settings: Adjust settings if needed.</p>
-        <p>3 - Single Scan or Continuous: Insert sample cuvette for scanning, wait for the measurement to finish.</p>
-        <p>4 - Save Data: Save measurement to database, begin AI analysis and create reports</p>
-        <p><strong>MEASURES Tab</strong></p>
-        <p>1 - Review all measurements that are saved alongside with their name and category</p>
-        <p>2 - Click a measurement to send csv via email or hide from view (will remain in database)</p>
-        <p><strong>ANALYSIS Tab</strong></p>
-        <p>1 - Select measurements to check metrics against reference sample</p>
-        <p>2 - If measurement has no category / reference sample, will appear no metric</p>
-        <p><strong>MAINTENANCE Tab</strong></p>
-        <p>1 - Check device health and recommended actions</p>
-        <p><strong>REPORTS Tab</strong></p>
-        <p>1 - Review PDF reports saved with AI/ML analysis</p>
-        <p>2 - Click a report to send PDF via email or hide from view (will remain in database)</p>
-        <p><strong>CHAT Tab</strong></p>
-        <p>1 - Chat with a trained AI engine anything related to spectrophotometer, measurements, analysis and device
-          health.</p>
+  <h3>Operating Guide</h3>
+
+  <div class="subtab-menu">
+    <button class="subtab-btn active" onclick="switchSubTab(event, 'flow-a')">A · Quick</button>
+    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-b')">B · Reference</button>
+    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-c')">C · Training</button>
+    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-d')">D · Unknown</button>
+    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-tabs')">Tabs</button>
+  </div>
+
+  <!-- ── A ── -->
+  <div id="flow-a" class="subtab-panel active">
+    <div class="metric-card-help">
+      <p><strong>A — Quick Measurement (Category "Other")</strong></p>
+      <p>Characterise any liquid. No reference or model needed — works from day one.</p>
+      <p>1 — <strong>Settings</strong>: sample name, category <em>Other</em>, reference <em>No</em>, known value blank</p>
+      <p>2 — Insert distilled water → <strong>Baseline</strong></p>
+      <p>3 — Insert sample → <strong>Single Scan</strong></p>
+      <p>4 — Review spectrum and key values on <strong>Home</strong></p>
+      <p>5 — <strong>Save Data</strong>, then confirm in <strong>Measures</strong></p>
+      <p>6 — <strong>Reports</strong>: PDF with spectrum, key values and baseline used</p>
+      <p><em>No score or prediction — "Other" has no reference profile.</em></p>
+    </div>
+  </div>
+
+  <!-- ── B ── -->
+  <div id="flow-b" class="subtab-panel">
+    <div class="metric-card-help">
+      <p><strong>B — Build a Reference Profile</strong></p>
+      <p>Defines what a good sample looks like. Enables anomaly detection.</p>
+      <p>1 — <strong>Settings</strong>: name <em>Milk_ref_01</em>, category, reference <em>Yes</em>, known value <strong>0</strong></p>
+      <p>2 — Insert distilled water → <strong>Baseline</strong></p>
+      <p>3 — Insert reference sample → <strong>Single Scan</strong> → <strong>Save Data</strong></p>
+      <p>4 — <strong>Remove and reinsert the cuvette</strong> (same marked face), rename to _02, scan and save again</p>
+      <p>5 — Repeat to 5–10 replicates</p>
+      <p>6 — <strong>Analysis</strong> → select category → <strong>Build Reference</strong></p>
+      <p><em>Reinserting between replicates is essential — without it σ measures only electronic noise, not real
+        measurement variation.</em></p>
+      <p><em>The reference is the 0 % point of the dilution series, so known value is always 0.</em></p>
+    </div>
+  </div>
+
+  <!-- ── C ── -->
+  <div id="flow-c" class="subtab-panel">
+    <div class="metric-card-help">
+      <p><strong>C — Dilution Series &amp; Training</strong></p>
+      <p>Teaches the model to predict numeric values. Requires Flow B first.</p>
+      <p>1 — Prepare 5 dilutions <strong>by mass</strong> (0.1 g scale):</p>
+      <p>&nbsp;&nbsp;&nbsp;Milk — 10/20/30/40/50 % added water</p>
+      <p>&nbsp;&nbsp;&nbsp;Coffee — 2/4/6/8/10 g/L instant coffee</p>
+      <p>&nbsp;&nbsp;&nbsp;Water — 4/8/12/16/20 % of dye stock</p>
+      <p>2 — <strong>Settings</strong> per sample: category, reference <em>No</em>, known value = that dilution</p>
+      <p>3 — Insert distilled water → <strong>Baseline</strong></p>
+      <p>4 — Measure <strong>3 replicates per level in random order</strong> (Milk_30_a, _b, _c)</p>
+      <p>5 — Re-run <strong>Baseline</strong> every 8–10 samples</p>
+      <p>6 — <strong>Analysis</strong> → <strong>Sanity Plot</strong>: expect a straight line, R² &gt; 0.99</p>
+      <p>7 — <strong>Analysis</strong> → <strong>Train Model</strong> → review metrics → Accept</p>
+      <p><em>Never measure 10→20→30→50 in order: thermal drift would correlate with concentration and the model would
+        learn the warm-up curve instead of the chemistry.</em></p>
+      <p><em>Start with the dye series — exactly known concentrations and pure Beer-Lambert absorbance, so it should
+        come out linear. If it doesn't, the fault is optical, not chemical.</em></p>
+    </div>
+  </div>
+
+  <!-- ── D ── -->
+  <div id="flow-d" class="subtab-panel">
+    <div class="metric-card-help">
+      <p><strong>D — Unknown Sample</strong></p>
+      <p>Normal operation once calibrated.</p>
+      <p>1 — <strong>Settings</strong>: name, category, reference <em>No</em>, known value blank</p>
+      <p>2 — Insert distilled water → <strong>Baseline</strong></p>
+      <p>3 — Insert sample → <strong>Single Scan</strong> → <strong>Save Data</strong></p>
+      <p>4 — <strong>Analysis</strong> shows deviation σ, PASS / ATTENTION / REJECT, and — if a model exists —
+        predicted value with confidence</p>
+      <p>5 — Select several rows for batch-level metrics</p>
+      <p>6 — <strong>Reports</strong>: full PDF with prediction, deviation and baseline used</p>
+    </div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div id="flow-tabs" class="subtab-panel">
+    <div class="row">
+      <div class="col">
+        <div class="metric-card-help">
+          <p><strong>What Each Flow Unlocks</strong></p>
+          <p>Flow A alone <strong>spectrum + key values</strong></p>
+          <p>After Flow B <strong>deviation σ + status</strong></p>
+          <p>After Flow C <strong>numeric prediction + confidence</strong></p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="metric-card-help">
+          <p><strong>Other Tabs</strong></p>
+          <p><strong>Measures</strong> — raw history of every saved scan. Select a row for detail and export.</p>
+          <p><strong>Maintenance</strong> — calibration age, baseline drift, sensor health, internal temperature.
+            Re-run Baseline when flagged.</p>
+          <p><strong>Reports</strong> — saved PDFs for single scans and full analyses.</p>
+          <p><strong>Chat</strong> — on-device AI assistant with access to your measurement data. Runs locally, so no
+            measurement leaves the instrument.</p>
+        </div>
       </div>
     </div>
   </div>
+</div>
 
   <!-- Modal -->
   <div id="fullModal">

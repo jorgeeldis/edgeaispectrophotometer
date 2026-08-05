@@ -1,5 +1,6 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
+from arduino.app_bricks.dbstorage_sqlstore import SQLStore
 import numpy as np
 import math
 
@@ -10,6 +11,62 @@ latest_hardware_data = []
 baseline = []
 lastScan = []
 
+db = SQLStore("edgeaispectrophotometer.db")
+
+columnsCalibration = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "dark_counts": "TEXT",      # JSON [12]
+    "dark_std": "TEXT",         # JSON [12] — noise floor
+    "white_counts": "TEXT",     # JSON [12]
+    "gain": "INTEGER",
+    "atime": "INTEGER",
+    "astep": "INTEGER",
+    "n_burst": "INTEGER",
+    "is_active": "INTEGER",
+}
+
+columnsMeasurement = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "name": "TEXT",
+    "category": "TEXT",
+    "calibration_id": "INTEGER",
+    "raw_counts": "TEXT",       # JSON [12] — source of truth
+    "saturated": "INTEGER",
+    "is_reference": "INTEGER",
+    "known_value": "REAL",      # NULL when unlabeled
+    "cal_tag": "TEXT",          # "4,19,99"
+    "notes": "TEXT",
+}
+
+columnsProfile = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "category": "TEXT",
+    "channel_means": "TEXT",    # JSON [12]
+    "channel_stds": "TEXT",     # JSON [12]
+    "n_samples": "INTEGER",
+    "cal_tag": "TEXT",
+    "is_active": "INTEGER",
+}
+
+columnsModel = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "category": "TEXT",
+    "path": "TEXT",
+    "n_samples": "INTEGER",
+    "n_components": "INTEGER",
+    "r2": "REAL", "rmse": "REAL", "mae": "REAL",
+    "cal_tag": "TEXT",
+    "is_active": "INTEGER",
+}
+
+db.create_table("calibration", columnsCalibration)
+db.create_table("measurement", columnsMeasurement)
+db.create_table("reference_profile", columnsProfile)
+db.create_table("model", columnsModel)
 
 # Arduino MCU → Python MPU
 def record_sensor_samples(

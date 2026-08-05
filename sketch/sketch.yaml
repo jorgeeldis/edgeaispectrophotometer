@@ -1,5 +1,10 @@
 profiles:
   default:
+    fqbn: 
     platforms:
       - platform: arduino:zephyr
+    libraries:
+      - SparkFun AS7343 Arduino Library (1.0.0)
+      - dependency: SparkFun Toolkit (1.2.0)
+
 default_profile: default

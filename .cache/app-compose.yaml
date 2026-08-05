@@ -1,7 +1,12 @@
 name: edgeaispectrophotometer
+include:
+- /var/lib/arduino-app-cli/assets/0.11.0/services/arduino/llamacpp/service_compose.unoq.yaml
 services:
   main:
     image: ghcr.io/arduino/app-bricks/python-apps-base:0.11.0
+    depends_on:
+      llamacpp-models-runner:
+        condition: service_started
     volumes:
     - type: bind
       source: /home/arduino/ArduinoApps/edgeaispectrophotometer

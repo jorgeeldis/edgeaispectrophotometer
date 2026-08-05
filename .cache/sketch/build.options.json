@@ -3,7 +3,7 @@
   "compiler.optimization_flags": "",
   "customBuildProperties": "",
   "fqbn": "arduino:zephyr:unoq:wait_linux_boot=app",
-  "hardwareFolders": "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0,/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.56.0",
+  "hardwareFolders": "/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.90.0,/home/arduino/.arduino15/packages/arduino/hardware/zephyr/0.90.0",
   "otherLibrariesFolders": "/home/arduino/Arduino/libraries",
   "sketchLocation": "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch"
 }

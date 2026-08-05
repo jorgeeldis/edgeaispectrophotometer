@@ -1,148 +1,163 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
 from arduino.app_bricks.dbstorage_sqlstore import SQLStore
-from datetime import datetime
 import numpy as np
-import json, math
+import math
 
 ui = WebUI()
+
+# Stores the latest spectrum received from Arduino
+latest_hardware_data = []
+baseline = []
+lastScan = []
+
 db = SQLStore("edgeaispectrophotometer.db")
 
-N_CH = 12
-WAVELENGTHS = [405, 425, 450, 475, 515, 555, 600, 640, 690, 745, 855, 940]
-SATURATION = 65000
-
-# ... table definitions unchanged, minus cal_tag/notes ...
-
-state = {
-    "latest": None,        # last spectrum pushed by the sketch
-    "baseline_id": None,   # active baseline row
-    "white": None,
-    "dark": None,
-    "dark_std": None,
+columnsBaseline = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "raw_counts": "TEXT",       # JSON [12] — white, LED on, distilled water
+    "dark_counts": "TEXT",      # JSON [12] — carried from dark calibration
+    "dark_std": "TEXT",         # JSON [12] — noise floor, feeds Maintenance
+    "n_burst": "INTEGER",
+    "is_active": "INTEGER",
 }
 
+columnsMeasurement = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "name": "TEXT",
+    "category": "TEXT",
+    "baseline_id": "INTEGER",
+    "raw_counts": "TEXT",       # JSON [12] — source of truth
+    "saturated": "INTEGER",
+    "is_reference": "INTEGER",
+    "known_value": "REAL",      # NULL when unlabeled
+}
 
-# ------------------------------------------------ Arduino -> Python
+columnsProfile = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "category": "TEXT",
+    "channel_means": "TEXT",    # JSON [12]
+    "channel_stds": "TEXT",     # JSON [12]
+    "n_samples": "INTEGER",
+    "is_active": "INTEGER",
+}
 
-def record_sensor_samples(begin, F1, F2, FZ, F3, F4, F5,
-                          FY, FXL, F6, F7, F8, NIR, end):
-    """Sketch pushes a spectrum. begin/end are framing sentinels."""
-    state["latest"] = [F1, F2, FZ, F3, F4, F5, FY, FXL, F6, F7, F8, NIR]
-    return "ok"
+columnsModel = {
+    "id": "INTEGER PRIMARY KEY",
+    "created_at": "TEXT",
+    "category": "TEXT",
+    "path": "TEXT",
+    "n_samples": "INTEGER",
+    "n_components": "INTEGER",
+    "r2": "REAL", "rmse": "REAL", "mae": "REAL",
+    "is_active": "INTEGER",
+}
 
-Bridge.provide("record_sensor_samples", record_sensor_samples)
+db.create_table("baseline", columnsBaseline)
+db.create_table("measurement", columnsMeasurement)
+db.create_table("reference_profile", columnsProfile)
+db.create_table("model", columnsModel)
 
+# Arduino MCU → Python MPU
+def record_sensor_samples(
+    begin: float,
+    F1: float,
+    F2: float,
+    FZ: float,
+    F3: float,
+    F4: float,
+    F5: float,
+    FY: float,
+    FXL: float,
+    F6: float,
+    F7: float,
+    F8: float,
+    NIR: float,
+    end: float
+):
+    global latest_hardware_data
 
-# ------------------------------------------------ helpers
+    latest_hardware_data = [
+        begin, F1, F2, FZ, F3, F4, F5,
+        FY, FXL, F6, F7, F8, NIR, end
+    ]
 
-def acquire():
-    """Trigger a fresh scan and wait for the push. None on timeout."""
-    state["latest"] = None
-    Bridge.call("scanNow")
-    for _ in range(50):                      # ~5 s
-        if state["latest"] is not None:
-            return state["latest"]
-        time.sleep(0.1)
-    return None
-
-
-def absorbance(raw):
-    """A = -log10((sample - dark) / (white - dark)), clamped."""
-    if state["white"] is None or state["dark"] is None:
-        return None
-    out = []
-    for i in range(N_CH):
-        num = raw[i] - state["dark"][i]
-        den = state["white"][i] - state["dark"][i]
-        if den <= 0 or num <= 0:
-            out.append(0.0)                  # dead channel or over-range
-        else:
-            out.append(round(-math.log10(min(num / den, 1.0)), 4))
-    return out
-
-
-def active_baseline():
-    rows = db.read("baseline")
-    live = [r for r in rows if r.get("is_active")]
-    return live[-1] if live else None
-
-
-# ------------------------------------------------ frontend
-
-@ui.sio.on("capture_baseline")
-async def handle_baseline(sid, data=None):
-    raw = acquire()
-    if raw is None:
-        await ui.sio.emit("error", {"msg": "Baseline timed out"}, to=sid)
-        return
-
-    # dark carried from the stored dark calibration; zeros until captured
-    dark = state["dark"] or [0.0] * N_CH
-    dark_std = state["dark_std"] or [0.0] * N_CH
-
-    for r in db.read("baseline"):            # deactivate previous
-        if r.get("is_active"):
-            db.update("baseline", {"is_active": 0}, {"id": r["id"]})
-
-    db.store("baseline", {
-        "created_at": datetime.now().isoformat(timespec="seconds"),
-        "raw_counts": json.dumps(raw),
-        "dark_counts": json.dumps(dark),
-        "dark_std": json.dumps(dark_std),
-        "n_burst": 1,
-        "is_active": 1,
-    })
-
-    row = active_baseline()
-    state["baseline_id"] = row["id"] if row else None
-    state["white"] = raw
-    state["dark"] = dark
-
-    await ui.sio.emit("baseline_result", {
-        "raw": raw,
-        "dark_std": dark_std,
-        "saturated": any(v >= SATURATION for v in raw),
-    })
+    print("Received from Arduino:")
+    print(latest_hardware_data)
 
 
-@ui.sio.on("single_scan")
-async def handle_scan(sid, data=None):
-    raw = acquire()
-    if raw is None:
-        await ui.sio.emit("error", {"msg": "Scan timed out"}, to=sid)
-        return
-
-    state["lastScan"] = raw
-    await ui.sio.emit("scan_result", {
-        "raw": raw,
-        "absorbance": absorbance(raw),
-        "saturated": any(v >= SATURATION for v in raw),
-    })
+# Register callback once
+Bridge.provide(
+    "record_sensor_samples",
+    record_sensor_samples
+)
 
 
-@ui.sio.on("save_scan_data")
-async def handle_save(sid, data):
-    if state["baseline_id"] is None:
-        await ui.sio.emit("error", {"msg": "No baseline — press Baseline first."}, to=sid)
-        return
+# Frontend requests latest spectrum
+@ui.sio.on('run_arduino_function')
+async def handle_frontend_request(sid, data=None):
+
+    global baseline 
+
+    baseline = latest_hardware_data
+
+    print("Frontend requested hardware baseline scan...")
+
+    print(
+        f"Sending data to frontend: "
+        f"{baseline}"
+    )
+
+    await ui.sio.emit(
+        'sendBaseline',
+        baseline
+    )
+
+@ui.sio.on('get_single_scan')
+async def frontend_request_single_scan(sid, data=None):
+
+    print("This is baseline: ", baseline)
+    print("This is latest: ", latest_hardware_data)
+
+    lastScan = [math.log10(baseline[i] / latest_hardware_data[i]) for i in range(len(baseline))]
+
+    print("Frontend requested hardware single scan...")
+
+    print(
+        f"Sending data to frontend: "
+        f"{lastScan}"
+    )
+
+    await ui.sio.emit(
+        'sendSingleScan',
+        lastScan
+    )
+
+@ui.sio.on('save_data')
+async def handle_save_data(sid, data):
+    # Save the data to the database
     try:
         db.store("measurement", {
-            "created_at": datetime.now().isoformat(timespec="seconds"),
-            "name": data["name"],
-            "category": data["category"],
-            "baseline_id": state["baseline_id"],
-            "raw_counts": json.dumps(data["raw_counts"]),
-            "saturated": int(data["saturated"]),
-            "is_reference": int(data["is_reference"]),
+            "created_at": data.get("created_at"),
+            "name": data.get("name"),
+            "category": data.get("category"),
+            "baseline_id": data.get("baseline_id"),
+            "raw_counts": str(data.get("raw_counts")),  # Convert list to string for storage
+            "saturated": int(data.get("saturated")),
+            "is_reference": int(data.get("is_reference")),
             "known_value": data.get("known_value"),
+            "cal_tag": data.get("cal_tag"),
+            "notes": data.get("notes")
         })
-        await ui.sio.emit("save_ok", {"name": data["name"]}, to=sid)
+        await ui.sio.emit('saveDataResponse', {"success": True, "filePath": "edgeaispectrophotometer.db"})
     except Exception as e:
-        await ui.sio.emit("error", {"msg": f"Save failed: {e}"}, to=sid)
-
+        await ui.sio.emit('saveDataResponse', {"success": False, "error": str(e)})
 
 def loop():
     pass
+
 
 App.run(user_loop=loop)

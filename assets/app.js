@@ -165,6 +165,7 @@ const scanSettings = {
   integrationTimeMs: 100,
   gain: 1,
   isRef: "No",
+  category: "Other",
 };
 
 const baselineBtn = document.getElementById("baseline-btn");
@@ -260,12 +261,14 @@ function saveDataAsCsv() {
 }
 
 function saveSettings() {
-  scanSettings.integrationTimeMs = setting-integration-time.value;
-  scanSettings.gain = setting-gain.value;
-  scanSettings.isRef = setting-reference.value;
-  Document.getElementById("rd-gain").textContent = scanSettings.gain;
-  Document.getElementById("rd-int").textContent = scanSettings.integrationTimeMs;
-  Document.getElementById("rd-ref").textContent = scanSettings.isRef ? "YES" : "NO";
+  scanSettings.integrationTimeMs = document.getElementById("setting-integration-time").value;
+  scanSettings.gain = document.getElementById("setting-gain").value;
+  scanSettings.isRef = document.getElementById("setting-reference").value;
+  scanSettings.category = document.getElementById("setting-category").value;
+  document.getElementById("rd-gain").textContent = scanSettings.gain + "x";
+  document.getElementById("rd-int").textContent = scanSettings.integrationTimeMs + " ms";
+  document.getElementById("rd-ref").textContent = scanSettings.isRef ? "YES" : "NO";
+  document.getElementById("rd-category").textContent = scanSettings.category;
   console.log("Settings updated: ", scanSettings);
 }
 

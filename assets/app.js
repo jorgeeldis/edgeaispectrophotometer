@@ -162,7 +162,7 @@ const wavelengths = [
 ];
 
 const scanSettings = {
-  integrationTimeMs: 100,
+  name: "Sample 1",
   gain: 1,
   isRef: "No",
   category: "Other",
@@ -261,12 +261,12 @@ function saveDataAsCsv() {
 }
 
 function saveSettings() {
-  scanSettings.integrationTimeMs = document.getElementById("setting-integration-time").value;
+  scanSettings.name = document.getElementById("setting-name").value;
   scanSettings.gain = document.getElementById("setting-gain").value;
   scanSettings.isRef = document.getElementById("setting-reference").value;
   scanSettings.category = document.getElementById("setting-category").value;
+  document.getElementById("rd-name").textContent = scanSettings.name;
   document.getElementById("rd-gain").textContent = scanSettings.gain + "x";
-  document.getElementById("rd-int").textContent = scanSettings.integrationTimeMs + " ms";
   document.getElementById("rd-ref").textContent = scanSettings.isRef ? "YES" : "NO";
   document.getElementById("rd-category").textContent = scanSettings.category;
   console.log("Settings updated: ", scanSettings);

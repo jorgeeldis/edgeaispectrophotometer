@@ -653,3 +653,4 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
 /* Transform tables to cards for very narrow screens if JS sets .cardify */
 .table.cardify tbody tr { display: block; margin-bottom: 8px; border-bottom: none; }
 .table.cardify tbody td, .table.cardify tbody th { display: block; text-align: left; padding: 8px 10px !important; border-right: none !important; }
+

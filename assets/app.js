@@ -164,7 +164,7 @@ const wavelengths = [
 const scanSettings = {
   integrationTimeMs: 100,
   gain: 1,
-  averaging: 1,
+  isRef: "No",
 };
 
 const baselineBtn = document.getElementById("baseline-btn");
@@ -260,14 +260,13 @@ function saveDataAsCsv() {
 }
 
 function saveSettings() {
-  scanSettings.integrationTimeMs =
-    Number(integrationTimeInput.value) || scanSettings.integrationTimeMs;
-  scanSettings.gain = Number(gainSelect.value) || scanSettings.gain;
-  scanSettings.averaging = Math.max(
-    1,
-    Number(averagingInput.value) || scanSettings.averaging,
-  );
-  console.log("Settings updated");
+  scanSettings.integrationTimeMs = setting-integration-time.value;
+  scanSettings.gain = setting-gain.value;
+  scanSettings.isRef = setting-reference.value;
+  Document.getElementById("rd-gain").textContent = scanSettings.gain;
+  Document.getElementById("rd-int").textContent = scanSettings.integrationTimeMs;
+  Document.getElementById("rd-ref").textContent = scanSettings.isRef ? "YES" : "NO";
+  console.log("Settings updated: ", scanSettings);
 }
 
 function switchTab(event, tabId) {

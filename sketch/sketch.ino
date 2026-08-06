@@ -2,7 +2,7 @@
 #include <SparkFun_AS7343.h>
 
 // AS7343 Sensor Instance
-SfeAS7343ArdI2C mySensor;
+SfeAs7343ArdI2C mySensor;
 
 // Buffer used by the library to store all raw sensor channels
 uint16_t myData[ksfAS7343NumChannels];
@@ -13,7 +13,7 @@ uint16_t myData[ksfAS7343NumChannels];
 const float MARKER = 0.0001;
 
 // Spectral channels that will be read from the AS7343
-const uint8_t channels[] = {
+const sfe_as7343_channel_t channels[] = {
     CH_PURPLE_F1_405NM,
     CH_DARK_BLUE_F2_425NM,
     CH_BLUE_FZ_450NM,

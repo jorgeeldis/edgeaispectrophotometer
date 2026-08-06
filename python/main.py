@@ -153,10 +153,12 @@ async def frontend_request_single_scan(sid, data=None):
 async def save_measurement(sid, data):
     global latest_baseline_id
 
+    print("save_measurement received data:", data)
+
     try:
         baseline_id = data.get("baseline_id") or latest_baseline_id
 
-        db.store("measurement", {
+        measurement_id = db.store("measurement", {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
@@ -167,9 +169,11 @@ async def save_measurement(sid, data):
             "known_value": data.get("known_value"),
         })
 
-        await ui.sio.emit('saveDataResponse', {"success": True, "filePath": "edgeaispectrophotometer.db"})
+        print(f"Saved measurement row id: {measurement_id}")
+        await ui.sio.emit('saveDataResponse', {"success": True, "filePath": "edgeaispectrophotometer.db"}, room=sid)
     except Exception as e:
-        await ui.sio.emit('saveDataResponse', {"success": False, "error": str(e)})
+        print("save_measurement failed:", e)
+        await ui.sio.emit('saveDataResponse', {"success": False, "error": str(e)}, room=sid)
 
 
 @ui.sio.on('save_data')
@@ -185,13 +189,7 @@ async def handle_save_scan_data(sid, data):
 @ui.sio.on('get_saved_measurements')
 async def handle_get_saved_measurements(sid, data=None):
     measurements = get_saved_measurements()
-    await ui.sio.emit('savedMeasurements', measurements)
-
-
-@ui.sio.on('get_saved_measurements')
-async def handle_get_saved_measurements(sid, data=None):
-    measurements = get_saved_measurements()
-    await ui.sio.emit('savedMeasurements', measurements)
+    await ui.sio.emit('savedMeasurements', measurements, room=sid)
 
 
 def get_saved_measurements():

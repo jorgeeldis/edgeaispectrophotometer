@@ -64,6 +64,7 @@ socket.on("sendSingleScan", (singleScanData) => {
 
   // Store the real sensor array into your state
   scanState.lastScan = singleScanData;
+  saveDataBtn.disabled = false;
   maxValue = Math.max(...singleScanData);
   minValue = Math.min(...singleScanData);
   meanValue = singleScanData.reduce((a, b) => a + b, 0) / singleScanData.length;
@@ -274,7 +275,7 @@ function saveData() {
 
   const isReference = scanSettings.isRef && scanSettings.isRef.toString().toLowerCase() === "yes";
 
-  socket.emit("save_scan_data", {
+  const payload = {
     created_at: new Date().toISOString(),
     name: scanSettings.name,
     category: scanSettings.category,
@@ -283,7 +284,10 @@ function saveData() {
     saturated: 0,
     is_reference: isReference ? 1 : 0,
     known_value: isReference ? 0 : scanSettings.known_value,
-  });
+  };
+
+  console.log("Sending save_scan_data payload", payload);
+  socket.emit("save_scan_data", payload);
 }
 
 function renderMeasurementsTable(measurements) {
@@ -340,15 +344,6 @@ function switchTab(event, tabId) {
   event.currentTarget.classList.add("active");
 }
 
-function onUIConnected() {
-  console.log("UI connected");
-  socket.emit("get_saved_measurements", {});
-}
-
-function onUIDisconnected() {
-  console.log("UI disconnected");
-}
-
 function closeSettingsModal() {
   if (!settingsModal) return;
   if (settingsModal.classList.contains("show")) {
@@ -356,9 +351,9 @@ function closeSettingsModal() {
   }
 }
 
-const ui = new WebUI();
-ui.on_connect(onUIConnected);
-ui.on_disconnect(onUIDisconnected);
+socket.on("disconnect", () => {
+  console.log("Socket disconnected");
+});
 
 function switchSubTab(event, panelId) {
   const container = event.currentTarget.closest(".tab-panel");

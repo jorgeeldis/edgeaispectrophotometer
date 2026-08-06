@@ -340,6 +340,22 @@ function switchTab(event, tabId) {
   event.currentTarget.classList.add("active");
 }
 
+function onUIConnected() {
+  console.log("UI connected");
+  socket.emit("get_saved_measurements", {});
+}
+
+function onUIDisconnected() {
+  console.log("UI disconnected");
+}
+
+function closeSettingsModal() {
+  if (!settingsModal) return;
+  if (settingsModal.classList.contains("show")) {
+    settingsModal.classList.remove("show");
+  }
+}
+
 const ui = new WebUI();
 ui.on_connect(onUIConnected);
 ui.on_disconnect(onUIDisconnected);

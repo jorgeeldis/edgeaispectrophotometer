@@ -3,6 +3,9 @@ from arduino.app_bricks.web_ui import WebUI
 from arduino.app_bricks.dbstorage_sqlstore import SQLStore
 import numpy as np
 import math
+import json
+import datetime
+import sqlite3
 
 ui = WebUI()
 
@@ -10,6 +13,7 @@ ui = WebUI()
 latest_hardware_data = []
 baseline = []
 lastScan = []
+latest_baseline_id = None
 
 db = SQLStore("edgeaispectrophotometer.db")
 
@@ -100,21 +104,31 @@ Bridge.provide(
 @ui.sio.on('run_arduino_function')
 async def handle_frontend_request(sid, data=None):
 
-    global baseline 
+    global baseline, latest_baseline_id
 
     baseline = latest_hardware_data
 
     print("Frontend requested hardware baseline scan...")
 
+    if baseline:
+        latest_baseline_id = db.store("baseline", {
+            "created_at": datetime.datetime.utcnow().isoformat(),
+            "raw_counts": json.dumps(baseline),
+            "dark_counts": json.dumps([]),
+            "dark_std": json.dumps([]),
+            "n_burst": 1,
+            "is_active": 1,
+        })
+        print(f"Saved baseline row id: {latest_baseline_id}")
+    else:
+        print("No baseline data available to save.")
+
     print(
-        f"Sending data to frontend: "
-        f"{baseline}"
+        f"Sending data to frontend: {baseline}"
     )
 
-    await ui.sio.emit(
-        'sendBaseline',
-        baseline
-    )
+    await ui.sio.emit('sendBaseline', baseline)
+
 
 @ui.sio.on('get_single_scan')
 async def frontend_request_single_scan(sid, data=None):
@@ -136,25 +150,61 @@ async def frontend_request_single_scan(sid, data=None):
         lastScan
     )
 
-@ui.sio.on('save_data')
-async def handle_save_data(sid, data):
-    # Save the data to the database
+async def save_measurement(sid, data):
+    global latest_baseline_id
+
     try:
+        baseline_id = data.get("baseline_id") or latest_baseline_id
+
         db.store("measurement", {
-            "created_at": data.get("created_at"),
+            "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
-            "baseline_id": data.get("baseline_id"),
-            "raw_counts": str(data.get("raw_counts")),  # Convert list to string for storage
+            "baseline_id": baseline_id,
+            "raw_counts": json.dumps(data.get("raw_counts")),
             "saturated": int(data.get("saturated")),
             "is_reference": int(data.get("is_reference")),
             "known_value": data.get("known_value"),
-            "cal_tag": data.get("cal_tag"),
-            "notes": data.get("notes")
         })
+
         await ui.sio.emit('saveDataResponse', {"success": True, "filePath": "edgeaispectrophotometer.db"})
     except Exception as e:
         await ui.sio.emit('saveDataResponse', {"success": False, "error": str(e)})
+
+
+@ui.sio.on('save_data')
+async def handle_save_data(sid, data):
+    await save_measurement(sid, data)
+
+
+@ui.sio.on('save_scan_data')
+async def handle_save_scan_data(sid, data):
+    await save_measurement(sid, data)
+
+
+@ui.sio.on('get_saved_measurements')
+async def handle_get_saved_measurements(sid, data=None):
+    measurements = get_saved_measurements()
+    await ui.sio.emit('savedMeasurements', measurements)
+
+
+@ui.sio.on('get_saved_measurements')
+async def handle_get_saved_measurements(sid, data=None):
+    measurements = get_saved_measurements()
+    await ui.sio.emit('savedMeasurements', measurements)
+
+
+def get_saved_measurements():
+    conn = sqlite3.connect('edgeaispectrophotometer.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, created_at, name, category, baseline_id, raw_counts, saturated, is_reference, known_value FROM measurement ORDER BY created_at DESC'
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
 
 def loop():
     pass

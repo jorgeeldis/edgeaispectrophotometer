@@ -96,7 +96,24 @@ socket.on("sendSingleScan", (singleScanData) => {
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
-socket
+socket.on("saveDataResponse", (response) => {
+  if (response.success) {
+    console.log("Save successful", response);
+    setScanStatus("Measurement saved.");
+    socket.emit("get_saved_measurements", {});
+  } else {
+    console.error("Save failed", response.error);
+    showError(response.error || "Failed to save measurement.");
+  }
+});
+
+socket.on("savedMeasurements", (measurements) => {
+  renderMeasurementsTable(measurements);
+});
+
+socket.on("connect", () => {
+  socket.emit("get_saved_measurements", {});
+});
 
 const RETRO_LAYOUT_BASELINE = {
   paper_bgcolor: "rgba(0,0,0,0)",
@@ -219,6 +236,11 @@ function setScanStatus(text) {
   if (scanStatus) scanStatus.textContent = text;
 }
 
+function showError(message) {
+  console.error(message);
+  setScanStatus(message);
+}
+
 function captureBaseline() {
   socket.emit("run_arduino_function", {});
 }
@@ -243,20 +265,51 @@ function toggleContinuousScan() {
 }
 
 function saveData() {
-  if (!scanState.lastScan) {
+  if (!scanState.lastScan || scanState.lastScan.length === 0) {
     return showError("No scan to save — run a Single Scan first.");
   }
   if (!scanSettings.name || !scanSettings.category) {
     return showError("Set a name and category in Settings before saving.");
   }
 
+  const isReference = scanSettings.isRef && scanSettings.isRef.toString().toLowerCase() === "yes";
+
   socket.emit("save_scan_data", {
-    name:         scanSettings.name,
-    category:     scanSettings.category,
-    is_reference: scanSettings.is_reference ? 1 : 0,
-    known_value:  scanSettings.is_reference ? 0 : scanSettings.known_value,
-    raw_counts:   scanState.lastScan.raw,
-    saturated:    scanState.lastScan.saturated ? 1 : 0,
+    created_at: new Date().toISOString(),
+    name: scanSettings.name,
+    category: scanSettings.category,
+    baseline_id: null,
+    raw_counts: scanState.lastScan,
+    saturated: 0,
+    is_reference: isReference ? 1 : 0,
+    known_value: isReference ? 0 : scanSettings.known_value,
+  });
+}
+
+function renderMeasurementsTable(measurements) {
+  const tbody = document.getElementById("measures-body");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  measurements.forEach((measurement) => {
+    const rawCounts = Array.isArray(measurement.raw_counts)
+      ? measurement.raw_counts
+      : JSON.parse(measurement.raw_counts || "[]");
+
+    const row = document.createElement("tr");
+    const nameCell = document.createElement("th");
+    nameCell.setAttribute("scope", "row");
+    nameCell.textContent = measurement.name || "Unnamed";
+    row.appendChild(nameCell);
+
+    rawCounts.slice(0, 12).forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = typeof value === "number" ? value.toFixed(2) : value;
+      row.appendChild(cell);
+    });
+
+    tbody.appendChild(row);
   });
 }
 

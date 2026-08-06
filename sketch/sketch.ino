@@ -2,7 +2,7 @@
 #include <SparkFun_AS7343.h>
 
 // AS7343 Sensor Instance
-SfeAs7343ArdI2C mySensor;
+SfeAS7343ArdI2C mySensor;
 
 // Buffer used by the library to store all raw sensor channels
 uint16_t myData[ksfAS7343NumChannels];

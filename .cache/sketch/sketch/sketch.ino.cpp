@@ -3,144 +3,157 @@
 #include <Arduino_RouterBridge.h>
 #include <SparkFun_AS7343.h>
 
+// AS7343 Sensor Instance
 SfeAS7343ArdI2C mySensor;
 
-uint16_t myData[ksfAS7343NumChannels]; // Array to hold spectral data
+// Buffer used by the library to store all raw sensor channels
+uint16_t myData[ksfAS7343NumChannels];
 
-#line 8 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+// Marker values sent to Python before and after the spectral data.
+// These make it easier for the Python application to detect the
+// beginning and end of a complete sample.
+const float MARKER = 0.0001;
+
+// Spectral channels that will be read from the AS7343
+const sfe_as7343_channel_t channels[] = {
+    CH_PURPLE_F1_405NM,
+    CH_DARK_BLUE_F2_425NM,
+    CH_BLUE_FZ_450NM,
+    CH_LIGHT_BLUE_F3_475NM,
+    CH_BLUE_F4_515NM,
+    CH_GREEN_F5_550NM,
+    CH_GREEN_FY_555NM,
+    CH_ORANGE_FXL_600NM,
+    CH_BROWN_F6_640NM,
+    CH_RED_F7_690NM,
+    CH_DARK_RED_F8_745NM,
+    CH_NIR_855NM
+};
+
+// Human-readable names used when printing the readings
+const char *channelNames[] = {
+    "F1", "F2", "FZ", "F3", "F4", "F5",
+    "FY", "FXL", "F6", "F7", "F8", "NIR"
+};
+
+// Stores the latest spectral measurements
+float values[12];
+
+
+// Stops program execution if a critical error occurs.
+#line 42 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+void halt(const char *message);
+#line 54 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 void setup();
-#line 73 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+#line 97 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 void loop();
-#line 8 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
-void setup()
+#line 42 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+void halt(const char *message)
 {
-  Serial.begin(9600);
-  Wire.begin();
-  Bridge.begin();
-
-  while (!Serial)
-    delay(10);
-
-  Serial.println("Initializing AS7343...");
-
-  // Initialize sensor and run default setup.
-  if (mySensor.begin() == false)
-  {
-    Serial.println("Sensor failed to begin. Please check your wiring!");
+    Serial.println(message);
     Serial.println("Halting...");
-    while (1)
-      ;
-  }
 
-  Serial.println("Sensor began.");
-
-  // Power on the device
-  if (mySensor.powerOn() == false)
-  {
-    Serial.println("Failed to power on the device.");
-    Serial.println("Halting...");
-    while (1)
-      ;
-  }
-  Serial.println("Device powered on.");
-
-  // Set the AutoSmux to output all 18 channels
-  if (mySensor.setAutoSmux(AUTOSMUX_18_CHANNELS) == false)
-  {
-    Serial.println("Failed to set AutoSmux.");
-    Serial.println("Halting...");
-    while (1)
-      ;
-  }
-  Serial.println("AutoSmux set to 18 channels.");
-
-  // Set the GAIN to x4
-  if (mySensor.setAgain(AGAIN_4) == false)
-    {
-        Serial.println("Failed to set gain.");
-        Serial.println("Halting...");
-        while (1)
-            ;
-    }
-    Serial.println("Gain set to 512x.");
-
-  // Enable Spectral Measurement
-  if (mySensor.enableSpectralMeasurement() == false)
-  {
-    Serial.println("Failed to enable spectral measurement.");
-    Serial.println("Halting...");
-    while (1)
-      ;
-  }
-  Serial.println("Spectral measurement enabled.");
-
-   
+    while (true)
+        delay(1000);
 }
 
+
+// Arduino Setup
+// Runs once during startup.
+void setup()
+{
+    // Initialize Serial Monitor
+    Serial.begin(9600);
+
+    // Initialize I2C communication
+    Wire.begin();
+
+    // Initialize Arduino Router Bridge
+    Bridge.begin();
+
+    // Wait until the serial port is ready
+    while (!Serial)
+        delay(10);
+
+    Serial.println("Initializing AS7343...");
+
+    // Initialize the sensor
+    if (!mySensor.begin())
+        halt("Sensor failed to begin.");
+
+    // Power on the sensor
+    if (!mySensor.powerOn())
+        halt("Failed to power on device.");
+
+    // Configure the sensor to automatically read all spectral channels
+    if (!mySensor.setAutoSmux(AUTOSMUX_18_CHANNELS))
+        halt("Failed to configure AutoSmux.");
+
+    // Set analog gain (4x)
+    if (!mySensor.setAgain(AGAIN_4))
+        halt("Failed to set gain.");
+
+    // Enable spectral measurements
+    if (!mySensor.enableSpectralMeasurement())
+        halt("Failed to enable spectral measurement.");
+
+    Serial.println("AS7343 ready.");
+}
+
+
+// Main Loop
+// Continuously acquires spectral data and sends it to Python.
 void loop()
 {
-  mySensor.ledOff();
+    // Turn off the onboard LED before taking measurements
+    mySensor.ledOff();
 
-  // Read all data registers
-  // if it fails, print a failure message and continue
-  if (mySensor.readSpectraDataFromSensor() == false)
-  {
-    Serial.println("Failed to read spectral data.");
-  }
+    // Trigger a new spectral acquisition
+    if (!mySensor.readSpectraDataFromSensor())
+    {
+        Serial.println("Failed to read spectral data.");
+        delay(2000);
+        return;
+    }
 
-  delay(2000);
+    // Retrieve all sensor registers
+    mySensor.getData(myData);
 
-  int channelsRead = mySensor.getData(myData);
+    // Extract only the channels used by this application
+    for (int i = 0; i < 12; i++)
+    {
+        values[i] = mySensor.getChannelData(channels[i]);
+    }
 
-  float begin = 0.0001;
-  float F1 =  mySensor.getChannelData(CH_PURPLE_F1_405NM);
-  float F2 =  mySensor.getChannelData(CH_DARK_BLUE_F2_425NM);
-  float FZ =  mySensor.getChannelData(CH_BLUE_FZ_450NM);
-  float F3 =  mySensor.getChannelData(CH_LIGHT_BLUE_F3_475NM);
-  float F4 =  mySensor.getChannelData(CH_BLUE_F4_515NM);
-  float F5 =  mySensor.getChannelData(CH_GREEN_F5_550NM);
-  float FY =  mySensor.getChannelData(CH_GREEN_FY_555NM);
-  float FXL =  mySensor.getChannelData(CH_ORANGE_FXL_600NM);
-  float F6 =  mySensor.getChannelData(CH_BROWN_F6_640NM);
-  float F7 =  mySensor.getChannelData(CH_RED_F7_690NM);
-  float F8 =  mySensor.getChannelData(CH_DARK_RED_F8_745NM);
-  float NIR =  mySensor.getChannelData(CH_NIR_855NM);
-  float end = 0.0001;
+    Serial.println("\n--- Spectral Readings ---");
 
+    for (int i = 0; i < 12; i++)
+    {
+        Serial.print(channelNames[i]);
+        Serial.print(": ");
+        Serial.println(values[i]);
+    }
 
-  Serial.println("\n--- Spectral Readings ---");
+    // -------------------------------------------------------------------------
+    // Send data to the Python application through Arduino Router Bridge.
+    //
+    // Data Format:
+    // MARKER,
+    // F1, F2, FZ, F3, F4, F5,
+    // FY, FXL, F6, F7, F8, NIR,
+    // MARKER
+    // -------------------------------------------------------------------------
+    Bridge.notify(
+        "record_sensor_samples",
+        MARKER,
+        values[0], values[1], values[2], values[3],
+        values[4], values[5], values[6], values[7],
+        values[8], values[9], values[10], values[11],
+        MARKER);
 
-  Serial.print("F1: ");
-  Serial.println(F1);
-  Serial.print("F2: ");
-  Serial.println(F2);
-  Serial.print("FZ: ");
-  Serial.println(FZ);
-  Serial.print("F3: ");
-  Serial.println(F3);
-  Serial.print("F4: ");
-  Serial.println(F4);
-  Serial.print("F5: ");
-  Serial.println(F5);
-  Serial.print("FY: ");
-  Serial.println(FY);
-  Serial.print("FXL: ");
-  Serial.println(FXL);
-  Serial.print("F6: ");
-  Serial.println(F6);
-  Serial.print("F7: ");
-  Serial.println(F7);
-  Serial.print("F8: ");
-  Serial.println(F8);
-  Serial.print("NIR: ");
-  Serial.println(NIR);
+    Serial.println("Sent to Python!");
+    Serial.println("--------------------------------");
 
-  // Arduino MCU → Python MPU
-  Bridge.notify(
-      "record_sensor_samples",
-      begin, F1, F2, FZ, F3, F4, F5,
-      FY, FXL, F6, F7, F8, NIR, end);
-
-  Serial.println("Sent to Python!");
-  Serial.println("--------------------------------");
+    // Wait before taking the next measurement
+    delay(2000);
 }

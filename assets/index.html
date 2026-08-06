@@ -354,10 +354,17 @@ SPDX-License-Identifier: MPL-2.0
 
     <!-- ANALYSIS -->
     <div id="tab3" class="tab-panel">
+      <div class="analysis-controls" style="margin-bottom:12px">
+        <div class="btn-group" role="group" aria-label="Analysis actions">
+          <button id="build-ref-btn" class="btn btn-primary">BUILD REFERENCE</button>
+          <button id="train-samples-btn" class="btn btn-secondary">TRAIN SAMPLES</button>
+          <button id="sanity-plot-btn" class="btn btn-outline-secondary">SANITY PLOT</button>
+        </div>
+      </div>
       <div class="row">
         <div class="col">
           <h3>Measurements</h3>
-          <div class="table-height">
+          <div class="table-height-analysis">
             <table class="table">
               <thead>
                 <tr>
@@ -493,7 +500,7 @@ SPDX-License-Identifier: MPL-2.0
         </div>
         <div class="col">
           <h3>Batch-Level Metrics</h3>
-          <div class="metric-card">
+          <div class="metric-card-analysis">
             <p><strong>Batch #1</strong></p>
             <p>Quality Score <strong>92%</strong></p>
             <p>Status <strong><span class="pill good">Good</span></strong></p>

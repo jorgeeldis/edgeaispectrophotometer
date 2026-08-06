@@ -365,6 +365,13 @@ table.table {
   -webkit-overflow-scrolling: touch;
 }
 
+.table-height-analysis {
+  max-height: 350px;
+  height: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table thead th {
   padding: 2px 8px !important;
   font-family: var(--label);
@@ -424,6 +431,17 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
 .metric-card-help {
   padding: 14px 16px;
   height: 300px; 
+  text-align: left;
+  background: linear-gradient(180deg, var(--case-light), var(--case));
+  border: 1px solid var(--case-dark);
+  border-radius: 5px;
+  box-shadow: var(--bevel-up);
+  overflow-y: auto;
+}
+
+.metric-card-analysis {
+  padding: 14px 16px;
+  height: 350px; 
   text-align: left;
   background: linear-gradient(180deg, var(--case-light), var(--case));
   border: 1px solid var(--case-dark);

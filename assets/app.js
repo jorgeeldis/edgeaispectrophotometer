@@ -293,29 +293,16 @@ function saveData() {
 
 function renderMeasurementsTable(measurements) {
   const tbody = document.getElementById("measures-body");
-  if (!tbody) return;
 
-  tbody.innerHTML = "";
-
-  measurements.forEach((measurement) => {
-    const rawCounts = Array.isArray(measurement.raw_counts)
-      ? measurement.raw_counts
-      : JSON.parse(measurement.raw_counts || "[]");
-
-    const row = document.createElement("tr");
-    const nameCell = document.createElement("th");
-    nameCell.setAttribute("scope", "row");
-    nameCell.textContent = measurement.name || "Unnamed";
-    row.appendChild(nameCell);
-
-    rawCounts.slice(0, 12).forEach((value) => {
-      const cell = document.createElement("td");
-      cell.textContent = typeof value === "number" ? value.toFixed(2) : value;
-      row.appendChild(cell);
-    });
-
-    tbody.appendChild(row);
-  });
+  // 3. Loop through data and build HTML rows using .map() and .join()
+  tBody.innerHTML = measurements.map(item => `
+      <tr>
+          <td>${item.id}</td>
+          <td>${item.name}</td>
+          <td>${item.raw_counts}</td>
+      </tr>
+  `).join('');
+ 
 }
 
 function saveSettings() {

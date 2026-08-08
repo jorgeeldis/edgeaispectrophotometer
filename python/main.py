@@ -89,8 +89,8 @@ def record_sensor_samples(
         FY, FXL, F6, F7, F8, NIR, end
     ]
 
-    print("Received from Arduino:")
-    print(latest_hardware_data)
+    #print("Received from Arduino:")
+    #print(latest_hardware_data)
 
 
 # Register callback once

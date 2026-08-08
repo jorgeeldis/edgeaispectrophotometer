@@ -5,6 +5,7 @@ import numpy as np
 import math
 import json
 import datetime
+import pandas
 
 ui = WebUI()
 
@@ -154,15 +155,16 @@ async def save_measurement(sid, data):
     print("save_measurement received data:", data)
 
     baseline_data = db.read("baseline")
-    latest_baseline_id = max(baseline_data, key=lambda x: x['created_at'])
-    print("the latest_baseline_id is ", latest_baseline_id)
+    baseline_data_last_value_array = baseline_data[-1]
+    baseline_data_last_id = next(iter(baseline_data_last_value_array.values()))
+    print("the latest_baseline_id is ", baseline_data_last_id)
     
     try:
         measurement_id = db.store("measurement", {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
-            "baseline_id": latest_baseline_id,
+            "baseline_id": baseline_data_last_id,
             "raw_counts": json.dumps(data.get("raw_counts")),
             "saturated": int(data.get("saturated")),
             "is_reference": int(data.get("is_reference")),

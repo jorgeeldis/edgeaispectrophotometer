@@ -110,6 +110,7 @@ socket.on("saveDataResponse", (response) => {
 
 socket.on("savedMeasurements", (measurements) => {
   renderMeasurementsTable(measurements);
+  console.log("This are the measurements loaded: ", measurements)
 });
 
 socket.on("connect", () => {

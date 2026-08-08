@@ -153,14 +153,15 @@ async def save_measurement(sid, data):
 
     print("save_measurement received data:", data)
 
-    print(db.read("baseline"))
+    baseline_data = db.read("baseline")
+    latest_baseline_id = max(baseline_data, key=lambda x: x['created_at'])
     
     try:
         measurement_id = db.store("measurement", {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
-            "baseline_id": 1,
+            "baseline_id": latest_baseline_id,
             "raw_counts": json.dumps(data.get("raw_counts")),
             "saturated": int(data.get("saturated")),
             "is_reference": int(data.get("is_reference")),

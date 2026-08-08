@@ -295,7 +295,7 @@ function renderMeasurementsTable(measurements) {
   const tbody = document.getElementById("measures-body");
 
   // 3. Loop through data and build HTML rows using .map() and .join()
-  tBody.innerHTML = measurements.map(item => `
+  tbody.innerHTML = measurements.map(item => `
       <tr>
           <td>${item.id}</td>
           <td>${item.name}</td>

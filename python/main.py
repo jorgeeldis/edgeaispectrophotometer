@@ -154,34 +154,14 @@ async def save_measurement(sid, data):
 
     print("save_measurement received data:", data)
 
-    conn = sqlite3.connect('edgeaispectrophotometer.db')
-    cursor = conn.cursor()
-
-    # 1. Added LIMIT 1 to prevent multiple rows if timestamps tie
-    cursor.execute("""
-        SELECT id FROM baseline 
-        WHERE created_at = (SELECT MAX(created_at) FROM baseline) 
-        LIMIT 1;
-    """)
-
-    # 2. Use fetchone() instead of fetchall()
-    row = cursor.fetchone()
-
-    if row:
-        last_id_baseline = row[0]  # Extracts the clean number from the tuple
-        print(last_id_baseline)     # Outputs: 5
-    else:
-        last_id_baseline = None     # Handles the case where the table is empty
-
-    conn.close()
-
-
+    print(db.read("baseline"))
+    
     try:
         measurement_id = db.store("measurement", {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
-            "baseline_id": last_id_baseline,
+            "baseline_id": 1,
             "raw_counts": json.dumps(data.get("raw_counts")),
             "saturated": int(data.get("saturated")),
             "is_reference": int(data.get("is_reference")),

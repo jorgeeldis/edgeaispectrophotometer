@@ -299,7 +299,18 @@ function renderMeasurementsTable(measurements) {
       <tr>
           <td>${item.id}</td>
           <td>${item.name}</td>
-          <td>${item.raw_counts}</td>
+          <td>${item.raw_counts[1]}</td>
+          <td>${item.raw_counts[2]}</td>
+          <td>${item.raw_counts[3]}</td>
+          <td>${item.raw_counts[4]}</td>
+          <td>${item.raw_counts[5]}</td>
+          <td>${item.raw_counts[6]}</td>
+          <td>${item.raw_counts[7]}</td>
+          <td>${item.raw_counts[8]}</td>
+          <td>${item.raw_counts[9]}</td>
+          <td>${item.raw_counts[10]}</td>
+          <td>${item.raw_counts[11]}</td>
+          <td>${item.raw_counts[12]}</td>
       </tr>
   `).join('');
  

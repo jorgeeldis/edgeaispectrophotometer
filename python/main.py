@@ -156,7 +156,7 @@ async def save_measurement(sid, data):
     print("save_measurement received data:", data)
 
     try:
-        baseline_id = data.get("baseline_id") or latest_baseline_id
+        baseline_id = latest_baseline_id
 
         measurement_id = db.store("measurement", {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),

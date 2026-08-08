@@ -64,7 +64,6 @@ services:
     environment:
       APP_HOME: /home/arduino/ArduinoApps/edgeaispectrophotometer
       BOARD_NAME: unoq
-      HOST_IP: 192.168.0.16
       MODELS_PATH: /var/lib/arduino-app-cli/models
     logging:
       driver: json-file

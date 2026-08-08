@@ -5,7 +5,6 @@ import numpy as np
 import math
 import json
 import datetime
-import sqlite3
 
 ui = WebUI()
 
@@ -192,14 +191,8 @@ async def handle_get_saved_measurements(sid, data=None):
 
 
 def get_saved_measurements():
-    conn = sqlite3.connect('edgeaispectrophotometer.db')
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute(
-        'SELECT id, created_at, name, category, baseline_id, raw_counts, saturated, is_reference, known_value FROM measurement ORDER BY created_at DESC'
-    )
-    rows = [dict(row) for row in cursor.fetchall()]
-    conn.close()
+    all_measurements = db.read("measurement")
+    rows = [dict(row) for row in all_measurements]
     return rows
 
 

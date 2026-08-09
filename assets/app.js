@@ -136,7 +136,8 @@ socket.on("connect", () => {
   socket.emit("get_saved_measurements", {});
 });
 
-socket.on("analysis_data", ({ rows, n_refs }) => {
+socket.on("analysisData", ({ rows, n_refs }) => {
+  socket.emit("get_analysis", {});
   const tbody = document.getElementById("analysis-body");
   console.log("This are the analysis loaded: ", rows)
 

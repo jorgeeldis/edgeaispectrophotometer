@@ -314,9 +314,11 @@ function renderMeasurementsTable(measurements) {
   const tbody = document.getElementById("measures-body");
 
   // 3. Loop through data and build HTML rows using .map() and .join()
-  const counts = JSON.parse(item.raw_counts);
-
-  return `
+  tbody.innerHTML = measurements
+    .map((item) => {
+      // Convert the string array "[1,2,3...]" into a real JavaScript array
+      const counts = JSON.parse(item.raw_counts);
+      return `
         <tr>
             <td>${item.id}</td>
             <td>${item.name}</td>
@@ -329,6 +331,8 @@ function renderMeasurementsTable(measurements) {
             }
         </tr>
     `;
+    })
+    .join("");
 }
 
 function saveSettings() {

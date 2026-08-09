@@ -121,6 +121,7 @@ socket.on("saveDataResponse", (response) => {
     console.log("Save successful", response);
     setScanStatus("Measurement saved.");
     socket.emit("get_saved_measurements", {});
+    socket.emit("get_analysis", {});
   } else {
     console.error("Save failed", response.error);
     showError(response.error || "Failed to save measurement.");
@@ -134,11 +135,11 @@ socket.on("savedMeasurements", (measurements) => {
 
 socket.on("connect", () => {
   socket.emit("get_saved_measurements", {});
-  socket.emit("get_analysis", {});
+  socket.emit("get_analysis", { category: "Other" });
 });
 
 socket.on("analysisData", (rows) => {
-  console.log("Analysis rows:", rows);
+  console.log("This are the analysis loaded: ", rows);
   renderAnalysisTable(rows);
 });
 

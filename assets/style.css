@@ -225,6 +225,45 @@ body.retro p { font-size: 12px; line-height: 1.5; color: var(--ink); }
   box-shadow: 0 0 6px var(--lamp-amber);
 }
 
+.analysis-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.analysis-controls .dropdown { position: relative; }
+.analysis-controls .tab-btn-analysis.dropdown-toggle {
+  width: 200px;
+  min-height: 48px;
+  color: var(--ink-soft);
+  background: linear-gradient(180deg, var(--case-light), var(--case));
+  border: 1px solid var(--case-dark);
+  border-radius: 3px;
+  box-shadow: var(--bevel-up);
+  padding: 11px 6px 10px;
+  font-family: var(--label);
+  font-size: 14px !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.analysis-controls .dropdown-menu {
+  background: var(--case);
+  border: 1px solid var(--case-dark);
+  border-radius: 6px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, .15);
+  margin-top: 6px;
+}
+.analysis-controls .dropdown-item {
+  color: var(--ink-soft);
+  padding: 8px 16px;
+  font-size: 12px;
+}
+.analysis-controls .dropdown-item:hover,
+.analysis-controls .dropdown-item:focus {
+  background: rgba(255, 255, 255, .08);
+  color: var(--ink);
+}
+
 /* ---------- Panels ---------- */
 
 .tab-panel { display: none; animation: fade .16s ease-out; }
@@ -666,7 +705,7 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
   #settings-save-btn {
     width: 100%;
   }
-}
+
 
 /* Bootstrap grid gutters */
 .container { max-width: 100%; padding: 0; }

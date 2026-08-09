@@ -111,7 +111,7 @@ SPDX-License-Identifier: MPL-2.0
             </tr>
           </thead>
           <tbody id="measures-body">
-          
+
           </tbody>
         </table>
       </div>
@@ -121,6 +121,18 @@ SPDX-License-Identifier: MPL-2.0
     <div id="tab3" class="tab-panel">
       <div class="analysis-controls" style="margin-bottom:12px">
         <div class="btn-group" role="group" aria-label="Analysis actions">
+          <div class="dropdown">
+            <button class="tab-btn-analysis dropdown-toggle" type="button" id="dropdownMenuButton"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Category: 
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+              <a class="dropdown-item" data-value="Other">Other</a>
+              <a class="dropdown-item" data-value="Water">Water</a>
+              <a class="dropdown-item" data-value="Coffee">Coffee</a>
+              <a class="dropdown-item" data-value="Milk">Milk</a>
+            </div>
+          </div>
           <button id="build-ref-btn" class="tab-btn-analysis">BUILD REFERENCE</button>
           <button id="train-samples-btn" class="tab-btn-analysis">TRAIN SAMPLES</button>
           <button id="sanity-plot-btn" class="tab-btn-analysis">SANITY PLOT</button>
@@ -143,14 +155,14 @@ SPDX-License-Identifier: MPL-2.0
                 </tr>
               </thead>
               <tbody id="analysis-body">
-                
+
               </tbody>
             </table>
           </div>
         </div>
         <div class="col">
           <!-- If singular selected -->
-           <!-- <h3>Single-Level Metrics</h3>
+          <!-- <h3>Single-Level Metrics</h3>
           <div class="metric-card-analysis">
             <p><strong>Name #1</strong></p>
             <p>Deviance <strong>92%</strong></p>
@@ -300,175 +312,180 @@ SPDX-License-Identifier: MPL-2.0
 
     <!-- HELP -->
     <div id="tab7" class="tab-panel">
-  <h3>Operating Guide</h3>
+      <h3>Operating Guide</h3>
 
-  <div class="subtab-menu">
-    <button class="subtab-btn active" onclick="switchSubTab(event, 'flow-a')">A · Quick</button>
-    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-b')">B · Reference</button>
-    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-c')">C · Training</button>
-    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-d')">D · Unknown</button>
-    <button class="subtab-btn" onclick="switchSubTab(event, 'flow-tabs')">Tabs</button>
-  </div>
+      <div class="subtab-menu">
+        <button class="subtab-btn active" onclick="switchSubTab(event, 'flow-a')">A · Quick</button>
+        <button class="subtab-btn" onclick="switchSubTab(event, 'flow-b')">B · Reference</button>
+        <button class="subtab-btn" onclick="switchSubTab(event, 'flow-c')">C · Training</button>
+        <button class="subtab-btn" onclick="switchSubTab(event, 'flow-d')">D · Unknown</button>
+        <button class="subtab-btn" onclick="switchSubTab(event, 'flow-tabs')">Tabs</button>
+      </div>
 
-  <!-- ── A ── -->
-  <div id="flow-a" class="subtab-panel active">
-    <div class="metric-card-help">
-      <p><strong>A — Quick Measurement (Category "Other")</strong></p>
-      <p>Characterise any liquid. No reference or model needed — works from day one.</p>
-      <p>1 — <strong>Settings</strong>: sample name, category <em>Other</em>, reference <em>No</em>, known value blank</p>
-      <p>2 — Insert distilled water → <strong>Baseline</strong></p>
-      <p>3 — Insert sample → <strong>Single Scan</strong></p>
-      <p>4 — Review spectrum and key values on <strong>Home</strong></p>
-      <p>5 — <strong>Save Data</strong>, then confirm in <strong>Measures</strong></p>
-      <p>6 — <strong>Reports</strong>: PDF with spectrum, key values and baseline used</p>
-      <p><em>No score or prediction — "Other" has no reference profile.</em></p>
-    </div>
-  </div>
-
-  <!-- ── B ── -->
-  <div id="flow-b" class="subtab-panel">
-    <div class="metric-card-help">
-      <p><strong>B — Build a Reference Profile</strong></p>
-      <p>Defines what a good sample looks like. Enables anomaly detection.</p>
-      <p>1 — <strong>Settings</strong>: name <em>Milk_ref_01</em>, category, reference <em>Yes</em>, known value <strong>0</strong></p>
-      <p>2 — Insert distilled water → <strong>Baseline</strong></p>
-      <p>3 — Insert reference sample → <strong>Single Scan</strong> → <strong>Save Data</strong></p>
-      <p>4 — <strong>Remove and reinsert the cuvette</strong> (same marked face), rename to _02, scan and save again</p>
-      <p>5 — Repeat to 5–10 replicates</p>
-      <p>6 — <strong>Analysis</strong> → select category → <strong>Build Reference</strong></p>
-      <p><em>Reinserting between replicates is essential — without it σ measures only electronic noise, not real
-        measurement variation.</em></p>
-      <p><em>The reference is the 0 % point of the dilution series, so known value is always 0.</em></p>
-    </div>
-  </div>
-
-  <!-- ── C ── -->
-  <div id="flow-c" class="subtab-panel">
-    <div class="metric-card-help">
-      <p><strong>C — Dilution Series &amp; Training</strong></p>
-      <p>Teaches the model to predict numeric values. Requires Flow B first.</p>
-      <p>1 — Prepare 5 dilutions <strong>by mass</strong> (0.1 g scale):</p>
-      <p>&nbsp;&nbsp;&nbsp;Milk — 10/20/30/40/50 % added water</p>
-      <p>&nbsp;&nbsp;&nbsp;Coffee — 2/4/6/8/10 g/L instant coffee</p>
-      <p>&nbsp;&nbsp;&nbsp;Water — 4/8/12/16/20 % of dye stock</p>
-      <p>2 — <strong>Settings</strong> per sample: category, reference <em>No</em>, known value = that dilution</p>
-      <p>3 — Insert distilled water → <strong>Baseline</strong></p>
-      <p>4 — Measure <strong>3 replicates per level in random order</strong> (Milk_30_a, _b, _c)</p>
-      <p>5 — Re-run <strong>Baseline</strong> every 8–10 samples</p>
-      <p>6 — <strong>Analysis</strong> → <strong>Sanity Plot</strong>: expect a straight line, R² &gt; 0.99</p>
-      <p>7 — <strong>Analysis</strong> → <strong>Train Model</strong> → review metrics → Accept</p>
-      <p><em>Never measure 10→20→30→50 in order: thermal drift would correlate with concentration and the model would
-        learn the warm-up curve instead of the chemistry.</em></p>
-      <p><em>Start with the dye series — exactly known concentrations and pure Beer-Lambert absorbance, so it should
-        come out linear. If it doesn't, the fault is optical, not chemical.</em></p>
-    </div>
-  </div>
-
-  <!-- ── D ── -->
-  <div id="flow-d" class="subtab-panel">
-    <div class="metric-card-help">
-      <p><strong>D — Unknown Sample</strong></p>
-      <p>Normal operation once calibrated.</p>
-      <p>1 — <strong>Settings</strong>: name, category, reference <em>No</em>, known value blank</p>
-      <p>2 — Insert distilled water → <strong>Baseline</strong></p>
-      <p>3 — Insert sample → <strong>Single Scan</strong> → <strong>Save Data</strong></p>
-      <p>4 — <strong>Analysis</strong> shows deviation σ, PASS / ATTENTION / REJECT, and — if a model exists —
-        predicted value with confidence</p>
-      <p>5 — Select several rows for batch-level metrics</p>
-      <p>6 — <strong>Reports</strong>: full PDF with prediction, deviation and baseline used</p>
-    </div>
-  </div>
-
-  <!-- ── Tabs ── -->
-  <div id="flow-tabs" class="subtab-panel">
-    <div class="row">
-      <div class="col">
+      <!-- ── A ── -->
+      <div id="flow-a" class="subtab-panel active">
         <div class="metric-card-help">
-          <p><strong>What Each Flow Unlocks</strong></p>
-          <p>Flow A alone <strong>spectrum + key values</strong></p>
-          <p>After Flow B <strong>deviation σ + status</strong></p>
-          <p>After Flow C <strong>numeric prediction + confidence</strong></p>
+          <p><strong>A — Quick Measurement (Category "Other")</strong></p>
+          <p>Characterise any liquid. No reference or model needed — works from day one.</p>
+          <p>1 — <strong>Settings</strong>: sample name, category <em>Other</em>, reference <em>No</em>, known value
+            blank</p>
+          <p>2 — Insert distilled water → <strong>Baseline</strong></p>
+          <p>3 — Insert sample → <strong>Single Scan</strong></p>
+          <p>4 — Review spectrum and key values on <strong>Home</strong></p>
+          <p>5 — <strong>Save Data</strong>, then confirm in <strong>Measures</strong></p>
+          <p>6 — <strong>Reports</strong>: PDF with spectrum, key values and baseline used</p>
+          <p><em>No score or prediction — "Other" has no reference profile.</em></p>
         </div>
       </div>
-      <div class="col">
+
+      <!-- ── B ── -->
+      <div id="flow-b" class="subtab-panel">
         <div class="metric-card-help">
-          <p><strong>Other Tabs</strong></p>
-          <p><strong>Measures</strong> — raw history of every saved scan. Select a row for detail and export.</p>
-          <p><strong>Maintenance</strong> — calibration age, baseline drift, sensor health, internal temperature.
-            Re-run Baseline when flagged.</p>
-          <p><strong>Reports</strong> — saved PDFs for single scans and full analyses.</p>
-          <p><strong>Chat</strong> — on-device AI assistant with access to your measurement data. Runs locally, so no
-            measurement leaves the instrument.</p>
+          <p><strong>B — Build a Reference Profile</strong></p>
+          <p>Defines what a good sample looks like. Enables anomaly detection.</p>
+          <p>1 — <strong>Settings</strong>: name <em>Milk_ref_01</em>, category, reference <em>Yes</em>, known value
+            <strong>0</strong></p>
+          <p>2 — Insert distilled water → <strong>Baseline</strong></p>
+          <p>3 — Insert reference sample → <strong>Single Scan</strong> → <strong>Save Data</strong></p>
+          <p>4 — <strong>Remove and reinsert the cuvette</strong> (same marked face), rename to _02, scan and save again
+          </p>
+          <p>5 — Repeat to 5–10 replicates</p>
+          <p>6 — <strong>Analysis</strong> → select category → <strong>Build Reference</strong></p>
+          <p><em>Reinserting between replicates is essential — without it σ measures only electronic noise, not real
+              measurement variation.</em></p>
+          <p><em>The reference is the 0 % point of the dilution series, so known value is always 0.</em></p>
+        </div>
+      </div>
+
+      <!-- ── C ── -->
+      <div id="flow-c" class="subtab-panel">
+        <div class="metric-card-help">
+          <p><strong>C — Dilution Series &amp; Training</strong></p>
+          <p>Teaches the model to predict numeric values. Requires Flow B first.</p>
+          <p>1 — Prepare 5 dilutions <strong>by mass</strong> (0.1 g scale):</p>
+          <p>&nbsp;&nbsp;&nbsp;Milk — 10/20/30/40/50 % added water</p>
+          <p>&nbsp;&nbsp;&nbsp;Coffee — 2/4/6/8/10 g/L instant coffee</p>
+          <p>&nbsp;&nbsp;&nbsp;Water — 4/8/12/16/20 % of dye stock</p>
+          <p>2 — <strong>Settings</strong> per sample: category, reference <em>No</em>, known value = that dilution</p>
+          <p>3 — Insert distilled water → <strong>Baseline</strong></p>
+          <p>4 — Measure <strong>3 replicates per level in random order</strong> (Milk_30_a, _b, _c)</p>
+          <p>5 — Re-run <strong>Baseline</strong> every 8–10 samples</p>
+          <p>6 — <strong>Analysis</strong> → <strong>Sanity Plot</strong>: expect a straight line, R² &gt; 0.99</p>
+          <p>7 — <strong>Analysis</strong> → <strong>Train Model</strong> → review metrics → Accept</p>
+          <p><em>Never measure 10→20→30→50 in order: thermal drift would correlate with concentration and the model
+              would
+              learn the warm-up curve instead of the chemistry.</em></p>
+          <p><em>Start with the dye series — exactly known concentrations and pure Beer-Lambert absorbance, so it should
+              come out linear. If it doesn't, the fault is optical, not chemical.</em></p>
+        </div>
+      </div>
+
+      <!-- ── D ── -->
+      <div id="flow-d" class="subtab-panel">
+        <div class="metric-card-help">
+          <p><strong>D — Unknown Sample</strong></p>
+          <p>Normal operation once calibrated.</p>
+          <p>1 — <strong>Settings</strong>: name, category, reference <em>No</em>, known value blank</p>
+          <p>2 — Insert distilled water → <strong>Baseline</strong></p>
+          <p>3 — Insert sample → <strong>Single Scan</strong> → <strong>Save Data</strong></p>
+          <p>4 — <strong>Analysis</strong> shows deviation σ, PASS / ATTENTION / REJECT, and — if a model exists —
+            predicted value with confidence</p>
+          <p>5 — Select several rows for batch-level metrics</p>
+          <p>6 — <strong>Reports</strong>: full PDF with prediction, deviation and baseline used</p>
+        </div>
+      </div>
+
+      <!-- ── Tabs ── -->
+      <div id="flow-tabs" class="subtab-panel">
+        <div class="row">
+          <div class="col">
+            <div class="metric-card-help">
+              <p><strong>What Each Flow Unlocks</strong></p>
+              <p>Flow A alone <strong>spectrum + key values</strong></p>
+              <p>After Flow B <strong>deviation σ + status</strong></p>
+              <p>After Flow C <strong>numeric prediction + confidence</strong></p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="metric-card-help">
+              <p><strong>Other Tabs</strong></p>
+              <p><strong>Measures</strong> — raw history of every saved scan. Select a row for detail and export.</p>
+              <p><strong>Maintenance</strong> — calibration age, baseline drift, sensor health, internal temperature.
+                Re-run Baseline when flagged.</p>
+              <p><strong>Reports</strong> — saved PDFs for single scans and full analyses.</p>
+              <p><strong>Chat</strong> — on-device AI assistant with access to your measurement data. Runs locally, so
+                no
+                measurement leaves the instrument.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-  <!-- Modal -->
-  <div id="fullModal">
-    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-      aria-labelledby="staticBackdropLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h1 class="modal-title fs-5" id="staticBackdropLabel">Acquisition Settings</h1>
-          </div>
-          <div class="modal-body">
-            <label class="modal-field">Sample Name
-              <input type="text" id="setting-name" />
-            </label>
-            <label class="modal-field">Category
-              <select id="setting-category">
-                <option>Other</option>
-                <option>Coffee</option>
-                <option>Milk</option>
-                <option>Water</option>
-              </select>
-            </label>
-            <label class="modal-field">Use as category reference
-              <select id="setting-reference">
-                <option>No</option>
-                <option>Yes</option>
-              </select>
-            </label>
-            <label class="modal-field">Gain
-              <select id="setting-gain">
-                <option value="0.5">0.5×</option>
-                <option value="1">1×</option>
-                <option value="2">2×</option>
-                <option value="4" selected>4×</option>
-                <option value="8">8×</option>
-              </select>
-            </label>
-            <label class="modal-field">Sample Averaging
-              <input type="number" id="setting-averaging" min="1" step="1" value="10" />
-            </label>
-            <label class="modal-field">Known Value
-              <input type="text" id="known-value" />
-            </label>
-          </div>
-          <div class="modal-footer">
-            <button class="btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button id="settings-save-btn" data-bs-dismiss="modal">Save</button>
+    <!-- Modal -->
+    <div id="fullModal">
+      <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="staticBackdropLabel">Acquisition Settings</h1>
+            </div>
+            <div class="modal-body">
+              <label class="modal-field">Sample Name
+                <input type="text" id="setting-name" />
+              </label>
+              <label class="modal-field">Category
+                <select id="setting-category">
+                  <option>Other</option>
+                  <option>Coffee</option>
+                  <option>Milk</option>
+                  <option>Water</option>
+                </select>
+              </label>
+              <label class="modal-field">Use as category reference
+                <select id="setting-reference">
+                  <option>No</option>
+                  <option>Yes</option>
+                </select>
+              </label>
+              <label class="modal-field">Gain
+                <select id="setting-gain">
+                  <option value="0.5">0.5×</option>
+                  <option value="1">1×</option>
+                  <option value="2">2×</option>
+                  <option value="4" selected>4×</option>
+                  <option value="8">8×</option>
+                </select>
+              </label>
+              <label class="modal-field">Sample Averaging
+                <input type="number" id="setting-averaging" min="1" step="1" value="10" />
+              </label>
+              <label class="modal-field">Known Value
+                <input type="text" id="known-value" />
+              </label>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button id="settings-save-btn" data-bs-dismiss="modal">Save</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <script src="libs/socket.io.min.js"></script>
-  <script src="libs/arduino.js"></script>
-  <script src="app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-    crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
-    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
-    crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
-    integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
-    crossorigin="anonymous"></script>
+    <script src="libs/socket.io.min.js"></script>
+    <script src="libs/arduino.js"></script>
+    <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+      integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
+      crossorigin="anonymous"></script>
 
 </body>
 

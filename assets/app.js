@@ -128,14 +128,29 @@ socket.on("saveDataResponse", (response) => {
   }
 });
 
-socket.on("savedMeasurements", (measurements) => {
-  renderMeasurementsTable(measurements);
-  console.log("This are the measurements loaded: ", measurements);
+const analysisCategory = { value: "Other" };
+
+document.getElementById('dropdownMenuButton').textContent = "Category: Other";
+
+document.querySelectorAll('.dropdown-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    e.preventDefault(); // Prevent page jump if using href="#"
+    
+    const selectedText = this.textContent;         // Gets "Option A"
+    const selectedValue = this.getAttribute('data-value'); // Gets "101"
+    
+    console.log("Text:", selectedText);
+    console.log("Value:", selectedValue);
+    
+    analysisCategory.value = selectedValue;
+    document.getElementById('dropdownMenuButton').textContent = "Category: " + selectedText;
+    socket.emit("get_analysis", { category: selectedValue });
+  });
 });
 
 socket.on("connect", () => {
   socket.emit("get_saved_measurements", {});
-  socket.emit("get_analysis", { category: "Other" });
+  socket.emit("get_analysis", { category: analysisCategory.value });
 });
 
 socket.on("analysisData", (rows) => {

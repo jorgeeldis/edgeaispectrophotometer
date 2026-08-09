@@ -7,11 +7,6 @@ SfeAS7343ArdI2C mySensor;
 // Buffer used by the library to store all raw sensor channels
 uint16_t myData[ksfAS7343NumChannels];
 
-// Marker values sent to Python before and after the spectral data.
-// These make it easier for the Python application to detect the
-// beginning and end of a complete sample.
-const float MARKER = 0.0001;
-
 // Spectral channels that will be read from the AS7343
 const sfe_as7343_channel_t channels[] = {
     CH_PURPLE_F1_405NM,
@@ -129,15 +124,13 @@ void loop()
     // Send data to the Python application through Arduino Router Bridge.
     //
     // Data Format:
-    // MARKER,
+    // 
     // F1, F2, FZ, F3, F4, F5,
     // FY, FXL, F6, F7, F8, NIR,
-    // MARKER
+    // 
     // -------------------------------------------------------------------------
     Bridge.notify(
-        "record_sensor_samples",
-
-        values[0], values[1], values[2], values[3],
+        "record_sensor_samples", values[0], values[1], values[2], values[3],
         values[4], values[5], values[6], values[7],
         values[8], values[9], values[10], values[11],
         );

@@ -211,14 +211,23 @@ async def handle_analysis(sid, data=None):
         b = baselines.get(m["baseline_id"])
         if not b:
             return None
-        raw   = json.loads(m["raw_counts"])[1:13]      # strip sentinels
-        dark  = json.loads(b["dark_counts"])[1:13]
-        white = json.loads(b["raw_counts"])[1:13]
+
+        def load(s):
+            v = json.loads(s)
+            return v[1:13] if len(v) == 14 else v[:12]   # strip sentinels only if present
+
+        raw, dark, white = load(m["raw_counts"]), load(b["dark_counts"]), load(b["raw_counts"])
+
+        n = min(len(raw), len(dark), len(white))
+        if n < 12:
+            print(f">>> id {m['id']}: short vector ({len(raw)},{len(dark)},{len(white)})", flush=True)
+            return None
+
         out = []
         for i in range(12):
             num, den = raw[i] - dark[i], white[i] - dark[i]
             out.append(0.0 if den <= 0 or num <= 0
-                       else round(-math.log10(min(num / den, 1.0)), 4))
+                    else round(-math.log10(min(num / den, 1.0)), 4))
         return out
 
     refs = [a for a in (absorbance_of(m) for m in rows if m["is_reference"]) if a]

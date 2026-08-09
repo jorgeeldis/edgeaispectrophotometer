@@ -47,10 +47,19 @@ socket.on("sendBaseline", (baselineData) => {
   );
 
   document.getElementById("readout-title").textContent = "Peak Amplitude";
-  document.getElementById("rd-max").textContent = maxValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(maxValue)] + " nm";
-  document.getElementById("rd-min").textContent = minValue.toFixed(4) + "mW @ " + wavelengths[baselineData.indexOf(minValue)] + " nm";
+  document.getElementById("rd-max").textContent =
+    maxValue.toFixed(4) +
+    "mW @ " +
+    wavelengths[baselineData.indexOf(maxValue)] +
+    " nm";
+  document.getElementById("rd-min").textContent =
+    minValue.toFixed(4) +
+    "mW @ " +
+    wavelengths[baselineData.indexOf(minValue)] +
+    " nm";
   document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "mW";
-  document.getElementById("rd-noise").textContent = noiseValue.toFixed(4) + " mW";
+  document.getElementById("rd-noise").textContent =
+    noiseValue.toFixed(4) + " mW";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
@@ -88,12 +97,21 @@ socket.on("sendSingleScan", (singleScanData) => {
     RETRO_LAYOUT,
     RETRO_CONFIG,
   );
-  
+
   document.getElementById("readout-title").textContent = "Peak Absorbance";
-  document.getElementById("rd-max").textContent = maxValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(maxValue)] + " nm";
-  document.getElementById("rd-min").textContent = minValue.toFixed(4) + "dB @ " + wavelengths[singleScanData.indexOf(minValue)] + " nm";
+  document.getElementById("rd-max").textContent =
+    maxValue.toFixed(4) +
+    "dB @ " +
+    wavelengths[singleScanData.indexOf(maxValue)] +
+    " nm";
+  document.getElementById("rd-min").textContent =
+    minValue.toFixed(4) +
+    "dB @ " +
+    wavelengths[singleScanData.indexOf(minValue)] +
+    " nm";
   document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "dB";
-  document.getElementById("rd-noise").textContent = noiseValue.toFixed(4) + " dB";
+  document.getElementById("rd-noise").textContent =
+    noiseValue.toFixed(4) + " dB";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
@@ -110,7 +128,7 @@ socket.on("saveDataResponse", (response) => {
 
 socket.on("savedMeasurements", (measurements) => {
   renderMeasurementsTable(measurements);
-  console.log("This are the measurements loaded: ", measurements)
+  console.log("This are the measurements loaded: ", measurements);
 });
 
 socket.on("connect", () => {
@@ -274,7 +292,8 @@ function saveData() {
     return showError("Set a name and category in Settings before saving.");
   }
 
-  const isReference = scanSettings.isRef && scanSettings.isRef.toString().toLowerCase() === "yes";
+  const isReference =
+    scanSettings.isRef && scanSettings.isRef.toString().toLowerCase() === "yes";
 
   const payload = {
     created_at: new Date().toISOString(),
@@ -295,25 +314,21 @@ function renderMeasurementsTable(measurements) {
   const tbody = document.getElementById("measures-body");
 
   // 3. Loop through data and build HTML rows using .map() and .join()
-  tbody.innerHTML = measurements.map(item => `
-      <tr>
-          <td>${item.id}</td>
-          <td>${item.name}</td>
-          <td>${item.raw_counts[1]}</td>
-          <td>${item.raw_counts[2]}</td>
-          <td>${item.raw_counts[3]}</td>
-          <td>${item.raw_counts[4]}</td>
-          <td>${item.raw_counts[5]}</td>
-          <td>${item.raw_counts[6]}</td>
-          <td>${item.raw_counts[7]}</td>
-          <td>${item.raw_counts[8]}</td>
-          <td>${item.raw_counts[9]}</td>
-          <td>${item.raw_counts[10]}</td>
-          <td>${item.raw_counts[11]}</td>
-          <td>${item.raw_counts[12]}</td>
-      </tr>
-  `).join('');
- 
+  const counts = JSON.parse(item.raw_counts);
+
+  return `
+        <tr>
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            ${
+              /* Slice indices 1 to 12 and turn them into <td> elements */
+              counts
+                .slice(1, 13)
+                .map((count) => `<td>${count ?? ""}</td>`)
+                .join("")
+            }
+        </tr>
+    `;
 }
 
 function saveSettings() {
@@ -321,10 +336,13 @@ function saveSettings() {
   scanSettings.gain = document.getElementById("setting-gain").value;
   scanSettings.isRef = document.getElementById("setting-reference").value;
   scanSettings.category = document.getElementById("setting-category").value;
-  scanSettings.known_value = parseFloat(document.getElementById("setting-known-value").value) || 0;
+  scanSettings.known_value =
+    parseFloat(document.getElementById("setting-known-value").value) || 0;
   document.getElementById("rd-name").textContent = scanSettings.name;
   document.getElementById("rd-gain").textContent = scanSettings.gain + "x";
-  document.getElementById("rd-ref").textContent = scanSettings.isRef ? "YES" : "NO";
+  document.getElementById("rd-ref").textContent = scanSettings.isRef
+    ? "YES"
+    : "NO";
   document.getElementById("rd-category").textContent = scanSettings.category;
   console.log("Settings updated: ", scanSettings);
 }
@@ -356,8 +374,12 @@ socket.on("disconnect", () => {
 
 function switchSubTab(event, panelId) {
   const container = event.currentTarget.closest(".tab-panel");
-  container.querySelectorAll(".subtab-panel").forEach((p) => p.classList.remove("active"));
-  container.querySelectorAll(".subtab-btn").forEach((b) => b.classList.remove("active"));
+  container
+    .querySelectorAll(".subtab-panel")
+    .forEach((p) => p.classList.remove("active"));
+  container
+    .querySelectorAll(".subtab-btn")
+    .forEach((b) => b.classList.remove("active"));
   container.querySelector("#" + panelId).classList.add("active");
   event.currentTarget.classList.add("active");
 }

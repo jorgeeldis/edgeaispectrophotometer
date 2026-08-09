@@ -326,7 +326,7 @@ function renderMeasurementsTable(measurements) {
               /* Slice indices 1 to 12 and turn them into <td> elements */
               counts
                 .slice(1, 13)
-                .map((count) => `<td>${count ?? ""}</td>`)
+                .map((count) => `<td>${count.toFixed(2) ?? ""}</td>`)
                 .join("")
             }
         </tr>

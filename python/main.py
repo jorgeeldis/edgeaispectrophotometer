@@ -5,30 +5,17 @@ import numpy as np
 import math
 import json
 import datetime
+import pandas
 
 ui = WebUI()
+
+# Stores the latest spectrum received from Arduino
+latest_hardware_data = []
+baseline = []
+lastScan = []
+latest_baseline_id = None
+
 db = SQLStore("edgeaispectrophotometer.db")
-
-N_CH = 12
-WAVELENGTHS = [405, 425, 450, 475, 515, 550, 555, 600, 640, 690, 745, 855]
-SATURATION = 65000
-
-# Dark reference — captured once and reused across sessions.
-# Replace with a real dark calibration burst; zeros until then.
-DARK_COUNTS = [0.0] * N_CH
-DARK_STD    = [0.0] * N_CH
-
-state = {
-    "latest": None,        # last spectrum pushed by the sketch (raw counts)
-    "white": None,         # active baseline white counts
-    "dark": DARK_COUNTS,
-    "dark_std": DARK_STD,
-    "baseline_id": None,
-    "last_scan": None,     # {"raw": [...], "absorbance": [...], "saturated": bool}
-}
-
-
-# ------------------------------------------------ schema
 
 columnsBaseline = {
     "id": "INTEGER PRIMARY KEY",
@@ -46,8 +33,7 @@ columnsMeasurement = {
     "name": "TEXT",
     "category": "TEXT",
     "baseline_id": "INTEGER",
-    "raw_counts": "TEXT",       # JSON [12] — counts, audit trail
-    "absorbance": "TEXT",       # JSON [12] — derived at capture, what readers use
+    "raw_counts": "TEXT",       # JSON [12] — source of truth
     "saturated": "INTEGER",
     "is_reference": "INTEGER",
     "known_value": "REAL",      # NULL when unlabeled
@@ -79,168 +65,117 @@ db.create_table("measurement", columnsMeasurement)
 db.create_table("reference_profile", columnsProfile)
 db.create_table("model", columnsModel)
 
+# Arduino MCU → Python MPU
+def record_sensor_samples(
 
-# ------------------------------------------------ helpers
+    F1: float,
+    F2: float,
+    FZ: float,
+    F3: float,
+    F4: float,
+    F5: float,
+    FY: float,
+    FXL: float,
+    F6: float,
+    F7: float,
+    F8: float,
+    NIR: float,
 
-def now():
-    return datetime.datetime.now().isoformat(timespec="seconds")
+):
+    global latest_hardware_data
 
+    latest_hardware_data = [
+F1, F2, FZ, F3, F4, F5,
+        FY, FXL, F6, F7, F8, NIR
+    ]
 
-def compute_absorbance(raw, white, dark):
-    """A = -log10((sample - dark) / (white - dark)), per channel."""
-    if not white or not raw:
-        return None
-    out = []
-    for i in range(N_CH):
-        num = raw[i] - dark[i]
-        den = white[i] - dark[i]
-        if den <= 0 or num <= 0:
-            out.append(0.0)                       # dead channel
-        else:
-            out.append(round(-math.log10(min(num / den, 1.0)), 4))
-    return out
-
-
-def active_baseline():
-    rows = [dict(r) for r in db.read("baseline")]
-    live = [r for r in rows if r.get("is_active")]
-    return (live or rows)[-1] if rows else None
-
-
-def load_vec(s):
-    """Tolerate legacy 14-value rows with sentinels."""
-    v = json.loads(s) if isinstance(s, str) else (s or [])
-    return v[1:13] if len(v) == 14 else v[:N_CH]
+    #print("Received from Arduino:")
+    #print(latest_hardware_data)
 
 
-def restore_state():
-    """Rehydrate the active baseline after a restart."""
-    b = active_baseline()
-    if not b:
-        return
-    state["baseline_id"] = b["id"]
-    state["white"] = load_vec(b["raw_counts"])
-    d = load_vec(b["dark_counts"])
-    if len(d) == N_CH:
-        state["dark"] = d
-    ds = load_vec(b["dark_std"])
-    if len(ds) == N_CH:
-        state["dark_std"] = ds
-    print(f">>> restored baseline {b['id']}", flush=True)
+# Register callback once
+Bridge.provide(
+    "record_sensor_samples",
+    record_sensor_samples
+)
 
 
-# ------------------------------------------------ Arduino -> Python
-
-def record_sensor_samples(F1: float, F2: float, FZ: float, F3: float,
-                          F4: float, F5: float, FY: float, FXL: float,
-                          F6: float, F7: float, F8: float, NIR: float):
-    state["latest"] = [F1, F2, FZ, F3, F4, F5, FY, FXL, F6, F7, F8, NIR]
-
-
-Bridge.provide("record_sensor_samples", record_sensor_samples)
-
-
-# ------------------------------------------------ baseline
-
+# Frontend requests latest spectrum
 @ui.sio.on('run_arduino_function')
-async def handle_baseline(sid, data=None):
-    raw = state["latest"]
-    if not raw:
-        await ui.sio.emit('error', {"msg": "No sensor data yet"}, room=sid)
-        return
+async def handle_frontend_request(sid, data=None):
 
-    # deactivate previous baselines
-    for r in db.read("baseline"):
-        r = dict(r)
-        if r.get("is_active"):
-            try:
-                db.update("baseline", {"is_active": 0}, {"id": r["id"]})
-            except Exception:
-                pass                              # brick may lack update()
+    global baseline, latest_baseline_id
 
-    db.store("baseline", {
-        "created_at": now(),
-        "raw_counts": json.dumps(raw),
-        "dark_counts": json.dumps(state["dark"]),
-        "dark_std": json.dumps(state["dark_std"]),
-        "n_burst": 1,
-        "is_active": 1,
-    })
+    baseline = latest_hardware_data
 
-    b = active_baseline()
-    state["baseline_id"] = b["id"] if b else None
-    state["white"] = raw
-    state["last_scan"] = None
+    print("Frontend requested hardware baseline scan...")
 
-    saturated = any(v >= SATURATION for v in raw)
-    print(f">>> baseline {state['baseline_id']} stored, saturated={saturated}", flush=True)
+    if baseline:
+        latest_baseline_id = db.store("baseline", {
+            "created_at": datetime.datetime.utcnow().isoformat(),
+            "raw_counts": json.dumps(baseline),
+            "dark_counts": json.dumps([]),
+            "dark_std": json.dumps([]),
+            "n_burst": 1,
+            "is_active": 1,
+        })
+        print(f"Saved baseline row id: {latest_baseline_id}")
+    else:
+        print("No baseline data available to save.")
 
-    await ui.sio.emit('sendBaseline', {
-        "raw": raw,
-        "dark_std": state["dark_std"],
-        "saturated": saturated,
-    }, room=sid)
+    print(
+        f"Sending data to frontend: {baseline}"
+    )
 
+    await ui.sio.emit('sendBaseline', baseline)
 
-# ------------------------------------------------ single scan
 
 @ui.sio.on('get_single_scan')
-async def handle_single_scan(sid, data=None):
-    raw = state["latest"]
-    if not raw:
-        await ui.sio.emit('error', {"msg": "No sensor data yet"}, room=sid)
-        return
-    if not state["white"]:
-        await ui.sio.emit('error', {"msg": "No baseline — press Baseline first"}, room=sid)
-        return
+async def frontend_request_single_scan(sid, data=None):
 
-    absorb = compute_absorbance(raw, state["white"], state["dark"])
-    saturated = any(v >= SATURATION for v in raw)
+    print("This is baseline: ", baseline)
+    print("This is latest: ", latest_hardware_data)
 
-    state["last_scan"] = {"raw": raw, "absorbance": absorb, "saturated": saturated}
+    lastScan = [math.log10(baseline[i] / latest_hardware_data[i]) for i in range(len(baseline))]
 
-    await ui.sio.emit('sendSingleScan', {
-        "raw": raw,
-        "absorbance": absorb,
-        "saturated": saturated,
-    }, room=sid)
+    print("Frontend requested hardware single scan...")
 
+    print(
+        f"Sending data to frontend: "
+        f"{lastScan}"
+    )
 
-# ------------------------------------------------ save
+    await ui.sio.emit(
+        'sendSingleScan',
+        lastScan
+    )
 
 async def save_measurement(sid, data):
-    scan = state["last_scan"]
-    if not scan:
-        await ui.sio.emit('saveDataResponse',
-                          {"success": False, "error": "No scan to save"}, room=sid)
-        return
-    if state["baseline_id"] is None:
-        await ui.sio.emit('saveDataResponse',
-                          {"success": False, "error": "No baseline"}, room=sid)
-        return
 
-    is_ref = int(data.get("is_reference") or 0)
-    known  = 0.0 if is_ref else data.get("known_value")
+    print("save_measurement received data:", data)
 
+    baseline_data = db.read("baseline")
+    baseline_data_last_value_array = baseline_data[-1]
+    baseline_data_last_id = next(iter(baseline_data_last_value_array.values()))
+    print("the latest_baseline_id is ", baseline_data_last_id)
+    
     try:
-        db.store("measurement", {
-            "created_at": now(),
+        measurement_id = db.store("measurement", {
+            "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
-            "baseline_id": state["baseline_id"],
-            "raw_counts": json.dumps(scan["raw"]),
-            "absorbance": json.dumps(scan["absorbance"]),
-            "saturated": int(scan["saturated"]),
-            "is_reference": is_ref,
-            "known_value": known,
+            "baseline_id": baseline_data_last_id,
+            "raw_counts": json.dumps(data.get("raw_counts")),
+            "saturated": int(data.get("saturated")),
+            "is_reference": int(data.get("is_reference")),
+            "known_value": data.get("known_value"),
         })
-        print(f">>> saved {data.get('name')}", flush=True)
-        await ui.sio.emit('saveDataResponse',
-                          {"success": True, "name": data.get("name")}, room=sid)
+
+        print(f"Saved measurement row id: {measurement_id}")
+        await ui.sio.emit('saveDataResponse', {"success": True, "filePath": "edgeaispectrophotometer.db"}, room=sid)
     except Exception as e:
-        print(">>> save failed:", e, flush=True)
-        await ui.sio.emit('saveDataResponse',
-                          {"success": False, "error": str(e)}, room=sid)
+        print("save_measurement failed:", e)
+        await ui.sio.emit('saveDataResponse', {"success": False, "error": str(e)}, room=sid)
 
 
 @ui.sio.on('save_data')
@@ -252,86 +187,80 @@ async def handle_save_data(sid, data):
 async def handle_save_scan_data(sid, data):
     await save_measurement(sid, data)
 
-
-# ------------------------------------------------ measures
-
 @ui.sio.on('get_saved_measurements')
 async def handle_get_saved_measurements(sid, data=None):
-    rows = []
-    for r in db.read("measurement"):
-        r = dict(r)
-        rows.append({
-            "id": r["id"],
-            "created_at": r["created_at"],
-            "name": r["name"],
-            "category": r["category"],
-            "absorbance": load_vec(r.get("absorbance") or r["raw_counts"]),
-            "saturated": r["saturated"],
-            "is_reference": r["is_reference"],
-            "known_value": r["known_value"],
-        })
-    rows.sort(key=lambda x: x["created_at"], reverse=True)
+    all_measurements = db.read("measurement")
+    rows = [dict(row) for row in all_measurements]
+    print("This are the rows", rows)
     await ui.sio.emit('savedMeasurements', rows, room=sid)
 
 
-# ------------------------------------------------ analysis
-
 @ui.sio.on('get_analysis')
 async def handle_analysis(sid, data=None):
+    print(">>> ANALYSIS FIRED", data, flush=True)
+
     category = (data or {}).get("category")
 
     measurements = [dict(r) for r in db.read("measurement")]
-    rows = ([m for m in measurements if m["category"] == category]
-            if category else measurements)
+    baselines    = {b["id"]: dict(b) for b in db.read("baseline")}
+
+    rows = [m for m in measurements if m["category"] == category]
+    print(f">>> {len(rows)} rows in {category}", flush=True)
 
     def absorbance_of(m):
-        v = load_vec(m.get("absorbance") or m["raw_counts"])
-        return v if len(v) == N_CH else None
+        b = baselines.get(m["baseline_id"])
+        if not b:
+            return None
 
-    # reference profile per category — milk refs can't score coffee
-    profiles = {}
-    by_cat = {}
-    for m in measurements:
-        if m["is_reference"]:
-            a = absorbance_of(m)
-            if a:
-                by_cat.setdefault(m["category"], []).append(a)
+        def load(s):
+            v = json.loads(s)
+            return v[1:13] if len(v) == 14 else v[:12]   # strip sentinels only if present
 
-    for cat, refs in by_cat.items():
-        print(f">>> {cat}: {len(refs)} refs", flush=True)
-        if len(refs) >= 2:
-            arr = np.array(refs)
-            profiles[cat] = (arr.mean(axis=0),
-                             np.maximum(arr.std(axis=0, ddof=1), 1e-6))
+        raw, dark, white = load(m["raw_counts"]), load(b["dark_counts"]), load(b["raw_counts"])
+
+        n = min(len(raw), len(dark), len(white))
+        if n < 12:
+            print(f">>> id {m['id']}: short vector ({len(raw)},{len(dark)},{len(white)})", flush=True)
+            return None
+
+        out = []
+        for i in range(12):
+            num, den = raw[i] - dark[i], white[i] - dark[i]
+            out.append(0.0 if den <= 0 or num <= 0
+                    else round(-math.log10(min(num / den, 1.0)), 4))
+        return out
+
+    refs = [a for a in (absorbance_of(m) for m in rows if m["is_reference"]) if a]
+    print(f">>> {len(refs)} reference replicates", flush=True)
+
+    means = stds = None
+    if len(refs) >= 2:
+        arr   = np.array(refs)
+        means = arr.mean(axis=0)
+        stds  = np.maximum(arr.std(axis=0, ddof=1), 1e-6)
 
     out = []
     for m in rows:
-        a = absorbance_of(m)
+        a   = absorbance_of(m)
         dev = None
-        prof = profiles.get(m["category"])
-        if a and prof:
-            means, stds = prof
-            z = (np.array(a) - means) / stds
-            dev = round(float(np.sqrt(np.mean(z ** 2))), 2)   # RMS z-score
+        if a and means is not None:
+            z   = (np.array(a) - means) / stds
+            dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
 
         out.append({
             "id": m["id"],
             "name": m["name"],
             "category": m["category"],
             "dev": dev,
-            "pred": None,          # awaits a trained model
+            "pred": None,
             "conf": None,
             "status": (None if dev is None else
                        "PASS" if dev < 2 else "ATTENTION" if dev < 3 else "REJECT"),
             "is_reference": m["is_reference"],
-            "known_value": m["known_value"],
         })
 
-    print(f">>> emitting {len(out)} rows", flush=True)
+    print(">>> emitting", len(out), "rows", flush=True)
     await ui.sio.emit('analysisData', out, room=sid)
-
-
-restore_state()
 
 
 def loop():

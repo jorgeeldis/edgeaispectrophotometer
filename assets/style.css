@@ -187,6 +187,44 @@ body.retro p { font-size: 12px; line-height: 1.5; color: var(--ink); }
   box-shadow: 0 0 6px var(--lamp-amber);
 }
 
+.tab-btn-analysis {
+  position: relative;
+  flex: 1;
+  padding: 11px 6px 10px;
+  font-family: var(--label);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: linear-gradient(180deg, var(--case-light), var(--case));
+  border: 1px solid var(--case-dark);
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: var(--bevel-up);
+  transition: transform .04s, background .12s;
+  width: 200px;
+}
+
+.tab-btn-analysis:hover { background: linear-gradient(180deg, #F5F0E3, var(--case-light)); }
+.tab-btn-analysis:active { transform: translateY(1px); }
+
+.tab-btn-analysis.active {
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--case-mid), var(--case-dark));
+  box-shadow: var(--bevel-in);
+}
+
+/* Indicator lamp above active tab */
+.tab-btn-analysis.active::after {
+  content: '';
+  position: absolute; top: 3px; left: 50%;
+  transform: translateX(-50%);
+  width: 22px; height: 3px; border-radius: 2px;
+  background: var(--lamp-amber);
+  box-shadow: 0 0 6px var(--lamp-amber);
+}
+
 /* ---------- Panels ---------- */
 
 .tab-panel { display: none; animation: fade .16s ease-out; }
@@ -644,6 +682,7 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
   .brand-plate h1 { font-size: 12px; letter-spacing: .18em; }
   .tab-menu { margin-bottom: 10px; }
   .tab-btn { padding: 13px 4px; font-size: 14px; letter-spacing: .08em; }
+  .tab-btn-analysis { padding: 13px 4px; font-size: 14px; letter-spacing: .08em; }
   .panel-header { grid-template-columns: 1fr 196px; gap: 10px; }
   #tester { height: 335px !important; }
   .readout-value { font-size: 21px; padding: 7px; }
@@ -659,6 +698,7 @@ td.reject { color: var(--lamp-red); font-weight: 700; }
   .brand-plate { flex-direction: column; align-items: flex-start; gap: 6px; }
   .tab-menu { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 6px; }
   .tab-btn { flex: 0 0 auto; padding: 10px 12px; font-size: 14px; }
+  .tab-btn-analysis { flex: 0 0 auto; padding: 10px 12px; font-size: 14px; }
   .panel-header { display: block; }
   .scope-well { margin-bottom: 12px; }
   #tester { height: 220px !important; }

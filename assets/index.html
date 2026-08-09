@@ -121,9 +121,9 @@ SPDX-License-Identifier: MPL-2.0
     <div id="tab3" class="tab-panel">
       <div class="analysis-controls" style="margin-bottom:12px">
         <div class="btn-group" role="group" aria-label="Analysis actions">
-          <button id="build-ref-btn" class="btn btn-primary">BUILD REFERENCE</button>
-          <button id="train-samples-btn" class="btn btn-secondary">TRAIN SAMPLES</button>
-          <button id="sanity-plot-btn" class="btn btn-outline-secondary">SANITY PLOT</button>
+          <button id="build-ref-btn" class="tab-btn-analysis">BUILD REFERENCE</button>
+          <button id="train-samples-btn" class="tab-btn-analysis">TRAIN SAMPLES</button>
+          <button id="sanity-plot-btn" class="tab-btn-analysis">SANITY PLOT</button>
         </div>
       </div>
       <div class="row">
@@ -133,6 +133,7 @@ SPDX-License-Identifier: MPL-2.0
             <table class="table">
               <thead>
                 <tr>
+                  <th></th>
                   <th scope="col">Name</th>
                   <th scope="col">Category</th>
                   <th scope="col">Dev σ</th>

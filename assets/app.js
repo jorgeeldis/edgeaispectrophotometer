@@ -138,6 +138,7 @@ socket.on("connect", () => {
 
 socket.on("analysis_data", ({ rows, n_refs }) => {
   const tbody = document.getElementById("analysis-body");
+  console.log("This are the analysis loaded: ", rows)
 
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No measurements in this category.</td></tr>`;

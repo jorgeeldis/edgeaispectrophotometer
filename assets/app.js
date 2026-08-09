@@ -136,33 +136,31 @@ socket.on("connect", () => {
   socket.emit("get_saved_measurements", {});
 });
 
-socket.on("analysisData", ({ rows, n_refs }) => {
-  socket.emit("get_analysis", {});
+socket.on("analysisData", (rows) => {
+  console.log("Analysis rows:", rows);
+  renderAnalysisTable(rows);
+});
+
+function renderAnalysisTable(rows) {
   const tbody = document.getElementById("analysis-body");
-  console.log("This are the analysis loaded: ", rows)
-
-  if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">No measurements in this category.</td></tr>`;
-    return;
-  }
-
   const cls = { PASS: "pass", ATTENTION: "warn", REJECT: "reject" };
 
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td><input type="checkbox" data-id="${r.id}"></td>
-      <th scope="row">${r.name}${r.is_reference ? " ★" : ""}</th>
-      <td>${r.category}</td>
-      <td>${r.dev ?? "—"}</td>
-      <td>${r.pred ?? "—"}</td>
-      <td>${r.conf ?? "—"}</td>
-      <td class="${cls[r.status] ?? ""}">${r.status ?? "—"}</td>
-    </tr>`).join("");
-
-  if (n_refs < 5) {
-    setAnalysisNote(`${n_refs} reference replicates — 5 recommended for a stable σ.`);
-  }
-});
+  tbody.innerHTML = rows
+    .map(
+      (r) => `
+        <tr>
+            <td><input type="checkbox" data-id="${r.id}"></td>
+            <td>${r.name}${r.is_reference ? " ★" : ""}</td>
+            <td>${r.category}</td>
+            <td>${r.dev ?? "—"}</td>
+            <td>${r.pred ?? "—"}</td>
+            <td>${r.conf ?? "—"}</td>
+            <td class="${cls[r.status] ?? ""}">${r.status ?? "—"}</td>
+        </tr>
+    `,
+    )
+    .join("");
+}
 
 const RETRO_LAYOUT_BASELINE = {
   paper_bgcolor: "rgba(0,0,0,0)",

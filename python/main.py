@@ -187,71 +187,71 @@ async def handle_save_data(sid, data):
 async def handle_save_scan_data(sid, data):
     await save_measurement(sid, data)
 
-
 @ui.sio.on('get_saved_measurements')
 async def handle_get_saved_measurements(sid, data=None):
     all_measurements = db.read("measurement")
     rows = [dict(row) for row in all_measurements]
+    print("This are the rows", rows)
     await ui.sio.emit('savedMeasurements', rows, room=sid)
 
 
-@ui.sio.on("get_analysis")
+@ui.sio.on('get_analysis')
 async def handle_analysis(sid, data=None):
+    print(">>> ANALYSIS FIRED", data, flush=True)
+
     category = (data or {}).get("category")
 
-    rows = [r for r in db.read("measurement") if r["category"] == category]
-    baselines = {b["id"]: b for b in db.read("baseline")}
+    measurements = [dict(r) for r in db.read("measurement")]
+    baselines    = {b["id"]: dict(b) for b in db.read("baseline")}
 
-    def absorbance_of(row):
-        b = baselines.get(row["baseline_id"])
+    rows = [m for m in measurements if m["category"] == category]
+    print(f">>> {len(rows)} rows in {category}", flush=True)
+
+    def absorbance_of(m):
+        b = baselines.get(m["baseline_id"])
         if not b:
             return None
-        raw   = json.loads(row["raw_counts"])
-        dark  = json.loads(b["dark_counts"])
-        white = json.loads(b["raw_counts"])
+        raw   = json.loads(m["raw_counts"])[1:13]      # strip sentinels
+        dark  = json.loads(b["dark_counts"])[1:13]
+        white = json.loads(b["raw_counts"])[1:13]
         out = []
-        for i in range(13):
+        for i in range(12):
             num, den = raw[i] - dark[i], white[i] - dark[i]
             out.append(0.0 if den <= 0 or num <= 0
                        else round(-math.log10(min(num / den, 1.0)), 4))
         return out
 
-    # on-the-fly reference profile
-    refs = [absorbance_of(r) for r in rows if r["is_reference"]]
-    refs = [a for a in refs if a]
+    refs = [a for a in (absorbance_of(m) for m in rows if m["is_reference"]) if a]
+    print(f">>> {len(refs)} reference replicates", flush=True)
 
     means = stds = None
     if len(refs) >= 2:
-        arr = np.array(refs)
+        arr   = np.array(refs)
         means = arr.mean(axis=0)
-        stds  = np.maximum(arr.std(axis=0, ddof=1), 1e-6)   # avoid /0
+        stds  = np.maximum(arr.std(axis=0, ddof=1), 1e-6)
 
     out = []
-    for r in rows:
-        a = absorbance_of(r)
+    for m in rows:
+        a   = absorbance_of(m)
         dev = None
         if a and means is not None:
-            z = (np.array(a) - means) / stds
-            dev = round(float(np.sqrt(np.mean(z ** 2))), 2)   # RMS z-score
+            z   = (np.array(a) - means) / stds
+            dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
 
         out.append({
-            "id": r["id"],
-            "name": r["name"],
-            "category": r["category"],
+            "id": m["id"],
+            "name": m["name"],
+            "category": m["category"],
             "dev": dev,
-            "pred": None,          # needs a trained model
+            "pred": None,
             "conf": None,
             "status": (None if dev is None else
                        "PASS" if dev < 2 else "ATTENTION" if dev < 3 else "REJECT"),
-            "is_reference": r["is_reference"],
+            "is_reference": m["is_reference"],
         })
 
-    print(out)
-
-    await ui.sio.emit("analysis_data", {
-        "rows": out,
-        "n_refs": len(refs),
-    }, to=sid)
+    print(">>> emitting", len(out), "rows", flush=True)
+    await ui.sio.emit('analysisData', out, room=sid)
 
 
 def loop():

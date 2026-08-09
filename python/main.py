@@ -199,6 +199,62 @@ def get_saved_measurements():
     rows = [dict(row) for row in all_measurements]
     return rows
 
+@ui.sio.on("get_analysis")
+async def handle_analysis(sid, data=None):
+    category = (data or {}).get("category")
+
+    rows = [r for r in db.read("measurement") if r["category"] == category]
+    baselines = {b["id"]: b for b in db.read("baseline")}
+
+    def absorbance_of(row):
+        b = baselines.get(row["baseline_id"])
+        if not b:
+            return None
+        raw   = json.loads(row["raw_counts"])
+        dark  = json.loads(b["dark_counts"])
+        white = json.loads(b["raw_counts"])
+        out = []
+        for i in range(13):
+            num, den = raw[i] - dark[i], white[i] - dark[i]
+            out.append(0.0 if den <= 0 or num <= 0
+                       else round(-math.log10(min(num / den, 1.0)), 4))
+        return out
+
+    # on-the-fly reference profile
+    refs = [absorbance_of(r) for r in rows if r["is_reference"]]
+    refs = [a for a in refs if a]
+
+    means = stds = None
+    if len(refs) >= 2:
+        arr = np.array(refs)
+        means = arr.mean(axis=0)
+        stds  = np.maximum(arr.std(axis=0, ddof=1), 1e-6)   # avoid /0
+
+    out = []
+    for r in rows:
+        a = absorbance_of(r)
+        dev = None
+        if a and means is not None:
+            z = (np.array(a) - means) / stds
+            dev = round(float(np.sqrt(np.mean(z ** 2))), 2)   # RMS z-score
+
+        out.append({
+            "id": r["id"],
+            "name": r["name"],
+            "category": r["category"],
+            "dev": dev,
+            "pred": None,          # needs a trained model
+            "conf": None,
+            "status": (None if dev is None else
+                       "PASS" if dev < 2 else "ATTENTION" if dev < 3 else "REJECT"),
+            "is_reference": r["is_reference"],
+        })
+
+    await ui.sio.emit("analysis_data", {
+        "rows": out,
+        "n_refs": len(refs),
+    }, to=sid)
+
 
 def loop():
     pass

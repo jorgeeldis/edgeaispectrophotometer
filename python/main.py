@@ -190,14 +190,10 @@ async def handle_save_scan_data(sid, data):
 
 @ui.sio.on('get_saved_measurements')
 async def handle_get_saved_measurements(sid, data=None):
-    measurements = get_saved_measurements()
-    await ui.sio.emit('savedMeasurements', measurements, room=sid)
-
-
-def get_saved_measurements():
     all_measurements = db.read("measurement")
     rows = [dict(row) for row in all_measurements]
-    return rows
+    await ui.sio.emit('savedMeasurements', rows, room=sid)
+
 
 @ui.sio.on("get_analysis")
 async def handle_analysis(sid, data=None):
@@ -249,6 +245,8 @@ async def handle_analysis(sid, data=None):
                        "PASS" if dev < 2 else "ATTENTION" if dev < 3 else "REJECT"),
             "is_reference": r["is_reference"],
         })
+
+    print(out)
 
     await ui.sio.emit("analysis_data", {
         "rows": out,

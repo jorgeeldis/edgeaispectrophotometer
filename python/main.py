@@ -67,7 +67,7 @@ db.create_table("model", columnsModel)
 
 # Arduino MCU → Python MPU
 def record_sensor_samples(
-    begin: float,
+
     F1: float,
     F2: float,
     FZ: float,
@@ -80,13 +80,13 @@ def record_sensor_samples(
     F7: float,
     F8: float,
     NIR: float,
-    end: float
+
 ):
     global latest_hardware_data
 
     latest_hardware_data = [
-        begin, F1, F2, FZ, F3, F4, F5,
-        FY, FXL, F6, F7, F8, NIR, end
+F1, F2, FZ, F3, F4, F5,
+        FY, FXL, F6, F7, F8, NIR
     ]
 
     #print("Received from Arduino:")

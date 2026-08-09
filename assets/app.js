@@ -134,6 +134,7 @@ socket.on("savedMeasurements", (measurements) => {
 
 socket.on("connect", () => {
   socket.emit("get_saved_measurements", {});
+  socket.emit("get_analysis", {});
 });
 
 socket.on("analysisData", (rows) => {

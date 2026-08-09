@@ -10,6 +10,7 @@ const scanState = {
   lastScan: [], // { raw, absorbance, timestamp }
 };
 darkStd = 0;
+noiseValue = 0;
 
 socket.on("sendBaseline", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);

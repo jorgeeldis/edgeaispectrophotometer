@@ -1,27 +1,55 @@
 #!/usr/bin/env python3
-# seed_test_data.py — inject synthetic rows into an existing .db
-# Usage:  python3 seed_test_data.py /path/to/edgeaispectrophotometer.db
+# seed_data.py — inject synthetic test rows into an existing .db
+#
+#   python3 seed_data.py <path-to-db>            append
+#   python3 seed_data.py <path-to-db> --clear    delete all rows first
 
-import json, sqlite3, random, sys
+import json, os, sqlite3, random, sys
 from datetime import datetime, timedelta
 
-DB = sys.argv[1] if len(sys.argv) > 1 else "edgeaispectrophotometer.db"
+DB    = sys.argv[1] if len(sys.argv) > 1 else "edgeaispectrophotometer.db"
+CLEAR = "--clear" in sys.argv
+
+if not os.path.exists(DB):
+    print(f"Not found: {os.path.abspath(DB)}\n\nNearby .db files:")
+    for root, _, files in os.walk("."):
+        for f in files:
+            if f.endswith(".db"):
+                print("  ", os.path.join(root, f))
+    sys.exit(1)
 
 random.seed(42)
-N_CH = 12
 
-# White LED through distilled water — peaks near 555nm, dies past 700nm
-WHITE = [8200, 11400, 15800, 21300, 32100, 41500, 38200, 29400, 18100, 7300, 2400, 980]
-DARK  = [142, 138, 145, 151, 149, 156, 148, 143, 139, 141, 137, 144]
-DSTD  = [3.8, 3.5, 4.1, 4.3, 4.0, 4.6, 4.2, 3.9, 3.7, 3.6, 3.4, 3.9]
+N_CH = 12
+WAVELENGTHS = [405, 425, 450, 475, 515, 550, 555, 600, 640, 690, 745, 855]
+
+# White LED through distilled water — phosphor peak spans the 550/555 pair
+WHITE = [8200, 11400, 15800, 21300, 32100, 40800, 41500, 38200, 29400, 18100, 7300, 2400]
+DARK  = [142, 138, 145, 151, 149, 152, 156, 148, 143, 139, 141, 137]
+DSTD  = [3.8, 3.5, 4.1, 4.3, 4.0, 4.4, 4.6, 4.2, 3.9, 3.7, 3.6, 3.4]
 
 conn = sqlite3.connect(DB)
 conn.row_factory = sqlite3.Row
 cur = conn.cursor()
 
+if CLEAR:
+    for t in ("measurement", "baseline", "reference_profile", "model"):
+        try:
+            cur.execute(f"DELETE FROM {t}")
+            print(f"cleared {t} ({cur.rowcount} rows)")
+        except sqlite3.OperationalError as e:
+            print(f"skip {t}: {e}")
+    try:
+        cur.execute("DELETE FROM sqlite_sequence WHERE name IN "
+                    "('measurement','baseline','reference_profile','model')")
+    except sqlite3.OperationalError:
+        pass          # table only exists when AUTOINCREMENT is used
+    conn.commit()
+
 t0 = datetime.now() - timedelta(hours=3)
 
-# ---------------- baseline ----------------
+# ------------------------------------------------ baseline
+
 cur.execute("""INSERT INTO baseline
     (created_at, raw_counts, dark_counts, dark_std, n_burst, is_active)
     VALUES (?,?,?,?,?,?)""",
@@ -30,17 +58,16 @@ cur.execute("""INSERT INTO baseline
 bid = cur.lastrowid
 print(f"baseline id {bid}")
 
+# ------------------------------------------------ helpers
 
 def counts_for(absv, noise=0.006):
     """Invert Beer-Lambert into plausible raw ADC counts."""
     out = []
     for i in range(N_CH):
         a = max(absv[i] + random.gauss(0, noise), 0)
-        t = 10 ** (-a)
-        v = DARK[i] + (WHITE[i] - DARK[i]) * t
+        v = DARK[i] + (WHITE[i] - DARK[i]) * (10 ** (-a))
         out.append(int(round(v + random.gauss(0, DSTD[i]))))
     return out
-
 
 n = 0
 def add(name, cat, absv, known, is_ref, minutes):
@@ -54,57 +81,66 @@ def add(name, cat, absv, known, is_ref, minutes):
          0, int(is_ref), known))
     n += 1
 
-
 def series(cat, shape, ref_abs, ref_n, levels, peak_abs, max_level, t_start, expo=1.0):
     for i in range(ref_n):
         add(f"{cat}_ref_{i+1:02d}", cat, [ref_abs * s for s in shape],
             0.0, True, t_start + i * 2)
 
     order = [(lvl, rep) for lvl in levels for rep in "abc"]
-    random.shuffle(order)                      # randomized, like real collection
+    random.shuffle(order)                          # randomized, as in real collection
     for k, (lvl, rep) in enumerate(order):
         scale = peak_abs * (lvl / max_level) ** expo
         add(f"{cat}_{lvl}_{rep}", cat, [scale * s for s in shape],
             float(lvl), False, t_start + ref_n * 2 + k * 2)
 
+# ------------------------------------------------ WATER: dye, 0-20 % of stock
+# Cleanest Beer-Lambert case, dye peaks ~640nm
 
-# WATER — dye 0-20 %, cleanest Beer-Lambert case, peaks ~640nm
-series("Water", [0.08, 0.11, 0.18, 0.31, 0.52, 0.74, 0.91, 1.00, 0.86, 0.24, 0.05, 0.02],
+series("Water",
+       [0.08, 0.11, 0.18, 0.31, 0.52, 0.71, 0.74, 0.91, 1.00, 0.86, 0.24, 0.05],
        ref_abs=0.004, ref_n=8, levels=(4, 8, 12, 16, 20),
        peak_abs=1.10, max_level=20, t_start=0)
 
-# COFFEE — dissolved solids 0-10 g/L, broad absorption rising toward blue
-series("Coffee", [1.00, 0.94, 0.82, 0.68, 0.47, 0.33, 0.24, 0.17, 0.12, 0.06, 0.03, 0.02],
+# ------------------------------------------------ COFFEE: solids, 0-10 g/L
+# Broad absorption rising toward blue
+
+series("Coffee",
+       [1.00, 0.94, 0.82, 0.68, 0.47, 0.35, 0.33, 0.24, 0.17, 0.12, 0.06, 0.03],
        ref_abs=0.006, ref_n=6, levels=(2, 4, 6, 8, 10),
        peak_abs=1.60, max_level=10, t_start=80)
 
-# MILK — 0-50 % added water; scattering-dominated, mildly nonlinear
-MILK = [1.00, 0.96, 0.90, 0.84, 0.74, 0.66, 0.59, 0.52, 0.45, 0.36, 0.27, 0.22]
+# ------------------------------------------------ MILK: 0-50 % added water
+# Scattering-dominated, falls with wavelength, mildly nonlinear
+
+MILK = [1.00, 0.96, 0.90, 0.84, 0.74, 0.67, 0.66, 0.59, 0.52, 0.45, 0.36, 0.27]
+
 for i in range(8):
     add(f"Milk_ref_{i+1:02d}", "Milk", [1.42 * s for s in MILK], 0.0, True, 160 + i * 2)
 
 order = [(lvl, rep) for lvl in (10, 20, 30, 40, 50) for rep in "abc"]
 random.shuffle(order)
 for k, (lvl, rep) in enumerate(order):
-    scale = 1.42 * (1 - lvl / 100) ** 1.15
+    scale = 1.42 * (1 - lvl / 100) ** 1.15         # deliberate mild nonlinearity
     add(f"Milk_{lvl}_{rep}", "Milk", [scale * s for s in MILK], float(lvl), False, 180 + k * 2)
 
-# OTHER — unlabeled, exercises the null Dev/Pred/Conf path
+# ------------------------------------------------ OTHER: unlabeled null path
+
 add("Tap_water_01", "Other", [0.02] * N_CH, None, False, 250)
 add("Olive_oil_01", "Other",
-    [0.9, 0.7, 0.5, 0.35, 0.2, 0.12, 0.08, 0.06, 0.05, 0.04, 0.03, 0.03],
+    [0.9, 0.7, 0.5, 0.35, 0.2, 0.13, 0.12, 0.08, 0.06, 0.05, 0.04, 0.03],
     None, False, 254)
 
-# Deliberate anomaly — should score REJECT, predict ~25-30 %
+# ------------------------------------------------ deliberate anomaly
+
 add("Milk_ADULTERATED_unknown", "Milk", [0.61 * s for s in MILK], None, False, 260)
 
 conn.commit()
 
-for row in cur.execute("""SELECT category, COUNT(*) n,
-                                 SUM(is_reference) refs,
-                                 COUNT(known_value) labeled
-                          FROM measurement GROUP BY category"""):
-    print(f"  {row['category']:8} {row['n']:3} rows  {row['refs']} refs  {row['labeled']} labeled")
+print()
+for r in cur.execute("""SELECT category, COUNT(*) n, SUM(is_reference) refs,
+                               COUNT(known_value) labeled
+                        FROM measurement GROUP BY category ORDER BY category"""):
+    print(f"  {r['category']:8} {r['n']:3} rows   {r['refs']} refs   {r['labeled']} labeled")
 
 print(f"\ninserted 1 baseline + {n} measurements into {DB}")
 conn.close()

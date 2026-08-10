@@ -203,7 +203,7 @@ body.retro p { font-size: 12px; line-height: 1.5; color: var(--ink); }
   cursor: pointer;
   box-shadow: var(--bevel-up);
   transition: transform .04s, background .12s;
-  width: 200px;
+  width: 194px;
 }
 
 .tab-btn-analysis:hover { background: linear-gradient(180deg, #F5F0E3, var(--case-light)); }

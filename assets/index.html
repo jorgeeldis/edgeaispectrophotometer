@@ -118,70 +118,60 @@ SPDX-License-Identifier: MPL-2.0
     </div>
 
     <!-- ANALYSIS -->
-    <div id="tab3" class="tab-panel">
-      <div class="analysis-controls" style="margin-bottom:12px">
-        <div class="btn-group" role="group" aria-label="Analysis actions">
-          <div class="dropdown">
-            <button class="tab-btn-analysis dropdown-toggle" type="button" id="dropdownMenuButton"
-              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              Category: 
-            </button>
-            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-              <a class="dropdown-item" data-value="Other">Other</a>
-              <a class="dropdown-item" data-value="Water">Water</a>
-              <a class="dropdown-item" data-value="Coffee">Coffee</a>
-              <a class="dropdown-item" data-value="Milk">Milk</a>
-            </div>
-          </div>
-          <button id="build-ref-btn" class="tab-btn-analysis">BUILD REFERENCE</button>
-          <button id="train-samples-btn" class="tab-btn-analysis">TRAIN SAMPLES</button>
-          <button id="sanity-plot-btn" class="tab-btn-analysis">SANITY PLOT</button>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col">
-          <h3>Measurements</h3>
-          <div class="table-height-analysis">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Category</th>
-                  <th scope="col">Dev σ</th>
-                  <th scope="col">Pred</th>
-                  <th scope="col">Conf</th>
-                  <th scope="col">Status</th>
-                </tr>
-              </thead>
-              <tbody id="analysis-body">
+<div id="tab3" class="tab-panel">
 
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="col">
-          <!-- If singular selected -->
-          <!-- <h3>Single-Level Metrics</h3>
-          <div class="metric-card-analysis">
-            <p><strong>Name #1</strong></p>
-            <p>Deviance <strong>92%</strong></p>
-            <p>Prediction <strong><span class="pill good">Good</span></strong></p>
-            <p>Confidence <strong>96%</strong></p>
-            <p>Status <strong>0</strong></p> -->
-          <!-- If multiple selected -->
-          <h3>Batch-Level Metrics</h3>
-          <div class="metric-card-analysis">
-            <p><strong>Batch #1</strong></p>
-            <p>Quality Score <strong>92%</strong></p>
-            <p>Status <strong><span class="pill good">Good</span></strong></p>
-            <p>Measurements <strong>5</strong></p>
-            <p>Avg Confidence <strong>96%</strong></p>
-            <p>Anomalies <strong>0</strong></p>
-          </div>
-        </div>
+  <div class="analysis-controls" style="margin-bottom:12px">
+    <div class="btn-group" role="group" aria-label="Analysis actions">
+      <select id="analysis-category" class="tab-btn-analysis" aria-label="Category">
+        <option value="Other">Other</option>
+        <option value="Water">Water</option>
+        <option value="Coffee">Coffee</option>
+        <option value="Milk">Milk</option>
+      </select>
+      <button id="build-ref-btn" class="tab-btn-analysis">BUILD REFERENCE</button>
+      <button id="train-samples-btn" class="tab-btn-analysis">TRAIN SAMPLES</button>
+      <button id="sanity-plot-btn" class="tab-btn-analysis">SANITY PLOT</button>
+      <button id="export-analysis-btn" class="tab-btn-analysis">EXPORT PDF</button>
+    </div>
+    <div id="analysis-note" class="scan-status" style="margin-top:8px"></div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <h3>Measurements</h3>
+      <div class="table-height-analysis">
+        <table class="table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="select-all" aria-label="Select all"></th>
+              <th scope="col">Name</th>
+              <th scope="col">Category</th>
+              <th scope="col">Dev σ</th>
+              <th scope="col">Pred</th>
+              <th scope="col">Conf</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="analysis-body">
+            <tr><td colspan="7" style="text-align:center">Loading…</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
+
+    <div class="col">
+      <!-- renderMetrics() writes either the single-level or batch-level card here -->
+      <div id="metrics-host">
+        <h3>Metrics</h3>
+        <div class="metric-card-analysis">
+          <p><strong>No selection</strong></p>
+          <p>Select rows to compute metrics.</p>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
 
     <!-- REPORTS -->
     <div id="tab4" class="tab-panel">

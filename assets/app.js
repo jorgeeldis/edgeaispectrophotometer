@@ -153,30 +153,97 @@ socket.on("connect", () => {
   socket.emit("get_analysis", { category: analysisCategory.value });
 });
 
+let analysisRows = [];
+
+const setAnalysisNote = (t) =>
+  (document.getElementById("analysis-note").textContent = t || "");
+
+document.getElementById("select-all").addEventListener("change", (e) => {
+  const boxes = document.querySelectorAll("#analysis-body .row-sel");
+  boxes.forEach(cb => (cb.checked = e.target.checked));
+  boxes[0]?.dispatchEvent(new Event("change"));
+});
+
 socket.on("analysisData", (rows) => {
-  console.log("This are the analysis loaded: ", rows);
+  analysisRows = rows;
   renderAnalysisTable(rows);
+  renderMetrics([]);
 });
 
 function renderAnalysisTable(rows) {
   const tbody = document.getElementById("analysis-body");
   const cls = { PASS: "pass", ATTENTION: "warn", REJECT: "reject" };
 
-  tbody.innerHTML = rows
-    .map(
-      (r) => `
-        <tr>
-            <td><input type="checkbox" data-id="${r.id}"></td>
-            <td>${r.name}${r.is_reference ? " ★" : ""}</td>
-            <td>${r.category}</td>
-            <td>${r.dev ?? "—"}</td>
-            <td>${r.pred ?? "—"}</td>
-            <td>${r.conf ?? "—"}</td>
-            <td class="${cls[r.status] ?? ""}">${r.status ?? "—"}</td>
-        </tr>
-    `,
-    )
-    .join("");
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">
+      No measurements in this category.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><input type="checkbox" class="row-sel" data-id="${r.id}"></td>
+      <td>${r.name}${r.is_reference ? " ★" : ""}</td>
+      <td>${r.category}</td>
+      <td>${r.dev ?? "—"}</td>
+      <td>${r.pred ?? "—"}</td>
+      <td>${r.conf ?? "—"}</td>
+      <td class="${cls[r.status] ?? ""}">${r.status ?? "—"}</td>
+    </tr>`).join("");
+
+  tbody.querySelectorAll(".row-sel").forEach(cb =>
+    cb.addEventListener("change", () => {
+      const ids = [...tbody.querySelectorAll(".row-sel:checked")]
+        .map(c => Number(c.dataset.id));
+      renderMetrics(analysisRows.filter(r => ids.includes(r.id)));
+    })
+  );
+}
+
+function renderMetrics(sel) {
+  const host = document.getElementById("metrics-host");
+
+  if (!sel.length) {
+    host.innerHTML = `<h3>Metrics</h3><div class="metric-card-analysis">
+      <p><strong>No selection</strong></p>
+      <p>Select rows to compute metrics.</p></div>`;
+    return;
+  }
+
+  if (sel.length === 1) {
+    const r = sel[0];
+    host.innerHTML = `<h3>Single-Level Metrics</h3><div class="metric-card-analysis">
+      <p><strong>${r.name}</strong></p>
+      <p>Deviation <strong>${r.dev ?? "—"} σ</strong></p>
+      <p>Prediction <strong>${r.pred ?? "—"}</strong></p>
+      <p>Confidence <strong>${r.conf ?? "—"}</strong></p>
+      <p>Known value <strong>${r.known_value ?? "—"}</strong></p>
+      <p>Status <strong>${pill(r.status)}</strong></p></div>`;
+    return;
+  }
+
+  const devs = sel.map(r => r.dev).filter(v => v != null);
+  const mean = devs.length ? devs.reduce((a, b) => a + b, 0) / devs.length : null;
+  const anom = sel.filter(r => r.status === "REJECT").length;
+  const worst = devs.length ? Math.max(...devs) : null;
+
+  // quality score falls off with mean deviation; 0σ = 100%, 3σ = 0%
+  const score = mean == null ? null : Math.max(0, Math.round(100 - (mean / 3) * 100));
+  const status = score == null ? null
+    : score >= 80 ? "PASS" : score >= 50 ? "ATTENTION" : "REJECT";
+
+  host.innerHTML = `<h3>Batch-Level Metrics</h3><div class="metric-card-analysis">
+    <p><strong>Batch — ${sel.length} measurements</strong></p>
+    <p>Quality Score <strong>${score == null ? "—" : score + "%"}</strong></p>
+    <p>Status <strong>${pill(status)}</strong></p>
+    <p>Mean Deviation <strong>${mean == null ? "—" : mean.toFixed(2) + " σ"}</strong></p>
+    <p>Worst Deviation <strong>${worst == null ? "—" : worst.toFixed(2) + " σ"}</strong></p>
+    <p>Anomalies <strong>${anom}</strong></p></div>`;
+}
+
+function pill(s) {
+  const m = { PASS: "good", ATTENTION: "attention", REJECT: "critical" };
+  return s ? `<span class="pill ${m[s]}">${s}</span>` : "—";
 }
 
 const RETRO_LAYOUT_BASELINE = {

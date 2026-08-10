@@ -262,7 +262,6 @@ async def handle_analysis(sid, data=None):
     print(">>> emitting", len(out), "rows", flush=True)
     await ui.sio.emit('analysisData', out, room=sid)
 
-
 def loop():
     pass
 

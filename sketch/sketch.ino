@@ -120,15 +120,7 @@ void loop()
         Serial.println(values[i]);
     }
 
-    // -------------------------------------------------------------------------
     // Send data to the Python application through Arduino Router Bridge.
-    //
-    // Data Format:
-    // 
-    // F1, F2, FZ, F3, F4, F5,
-    // FY, FXL, F6, F7, F8, NIR,
-    // 
-    // -------------------------------------------------------------------------
     Bridge.notify(
         "record_sensor_samples", values[0], values[1], values[2], values[3],
         values[4], values[5], values[6], values[7],

@@ -129,23 +129,11 @@ socket.on("saveDataResponse", (response) => {
 });
 
 const analysisCategory = { value: "Other" };
+const analysisSelect = document.getElementById("analysis-category");
 
-document.getElementById('dropdownMenuButton').textContent = "Category: Other";
-
-document.querySelectorAll('.dropdown-item').forEach(item => {
-  item.addEventListener('click', function(e) {
-    e.preventDefault(); // Prevent page jump if using href="#"
-    
-    const selectedText = this.textContent;         // Gets "Option A"
-    const selectedValue = this.getAttribute('data-value'); // Gets "101"
-    
-    console.log("Text:", selectedText);
-    console.log("Value:", selectedValue);
-    
-    analysisCategory.value = selectedValue;
-    document.getElementById('dropdownMenuButton').textContent = "Category: " + selectedText;
-    socket.emit("get_analysis", { category: selectedValue });
-  });
+analysisSelect.addEventListener("change", (e) => {
+  analysisCategory.value = e.target.value;
+  socket.emit("get_analysis", { category: analysisCategory.value });
 });
 
 socket.on("connect", () => {

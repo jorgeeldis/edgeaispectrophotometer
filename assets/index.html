@@ -282,19 +282,19 @@ SPDX-License-Identifier: MPL-2.0
         <div class="col">
           <div class="metric-card">
             <p><strong>System Status</strong></p>
-            <p>Calibration <strong><span class="pill attention">Attention</span></strong></p>
-            <p>Sensor <strong><span class="pill good">Healthy</span></strong></p>
-            <p>Internal Temp <strong>31.4 °C</strong></p>
-            <p>LED Hours <strong>142 h</strong></p>
-            <p>Firmware <strong>v0.4.1</strong></p>
+            <p>Calibration <strong><span id="maintenance-status" class="pill attention">Attention</span></strong></p>
+            <p>Sensor <strong><span id="maintenance-sensor" class="pill good">Healthy</span></strong></p>
+            <p>Internal Temp <strong id="maintenance-temp">31.4 °C</strong></p>
+            <p>LED Hours <strong id="maintenance-led-hours">142 h</strong></p>
+            <p>Firmware <strong id="maintenance-firmware">v0.4.1</strong></p>
           </div>
         </div>
         <div class="col">
           <div class="metric-card">
             <p><strong>Recommended Actions</strong></p>
-            <p>Dark reference age <strong>18 h</strong></p>
-            <p>Baseline drift <strong>1.4 %</strong></p>
-            <p>Next service <strong>~58 h</strong></p>
+            <p>Dark reference age <strong id="maintenance-dark-age">18 h</strong></p>
+            <p>Baseline drift <strong id="maintenance-drift">1.4 %</strong></p>
+            <p>Next service <strong id="maintenance-service">~58 h</strong></p>
           </div>
         </div>
       </div>
@@ -452,7 +452,7 @@ SPDX-License-Identifier: MPL-2.0
                 <input type="number" id="setting-averaging" min="1" step="1" value="10" />
               </label>
               <label class="modal-field">Known Value
-                <input type="text" id="known-value" />
+                <input type="text" id="setting-known-value" />
               </label>
             </div>
             <div class="modal-footer">

@@ -15,21 +15,17 @@ noiseValue = 0;
 socket.on("sendBaseline", (baselineData) => {
   console.log("Received baseline from Arduino:", baselineData);
 
-  // Guard clause: Make sure we actually received valid array data
   if (!baselineData || !Array.isArray(baselineData)) {
     console.error("Expected an array but received:", baselineData);
-    // If you kept the payload dictionary style {"value": [...]}, you would do:
-    // baselineData = baselineData.value;
+    return;
   }
 
-  // Store the real sensor array into your state
   scanState.baseline = baselineData;
   maxValue = Math.max(...baselineData);
   minValue = Math.min(...baselineData);
   meanValue = baselineData.reduce((a, b) => a + b, 0) / baselineData.length;
   setScanStatus("Baseline (dark reference) captured from hardware!");
 
-  // Redraw your Plotly graph with the real sensor data array
   Plotly.react(
     TESTER,
     [
@@ -139,9 +135,167 @@ analysisSelect.addEventListener("change", (e) => {
 socket.on("connect", () => {
   socket.emit("get_saved_measurements", {});
   socket.emit("get_analysis", { category: analysisCategory.value });
+  socket.emit("get_reports", {});
+  socket.emit("get_maintenance_status", {});
 });
 
 let analysisRows = [];
+
+function updateMaintenanceStatus(status) {
+  const panel = document.getElementById("maintenance-status");
+  if (panel) panel.textContent = status?.status || "healthy";
+  const temp = document.getElementById("maintenance-temp");
+  if (temp) temp.textContent = `${status?.temperature_c ?? 31.4} °C`;
+  const led = document.getElementById("maintenance-led-hours");
+  if (led) led.textContent = `${status?.led_hours ?? 142} h`;
+  const fw = document.getElementById("maintenance-firmware");
+  if (fw) fw.textContent = `${status?.firmware_version || "v0.4.1"}`;
+  const age = document.getElementById("maintenance-dark-age");
+  if (age) age.textContent = `${status?.dark_reference_age_hours ?? 18} h`;
+  const drift = document.getElementById("maintenance-drift");
+  if (drift) drift.textContent = `${status?.baseline_drift_percent ?? 1.4} %`;
+  const service = document.getElementById("maintenance-service");
+  if (service) service.textContent = `~${Math.max(0, 30 - (status?.dark_reference_age_hours ?? 18))} h`;
+  const sensor = document.getElementById("maintenance-sensor");
+  if (sensor) sensor.textContent = `${status?.sensor_health ?? "healthy"}`;
+}
+
+socket.on("maintenanceStatus", (status) => {
+  updateMaintenanceStatus(status || {});
+});
+
+function appendChatMessage(role, text) {
+  const log = document.getElementById("chat-log");
+  if (!log) return;
+  const line = document.createElement("div");
+  line.style.marginBottom = "8px";
+  line.textContent = `${role}: ${text}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+socket.on("chatResponse", (payload) => {
+  appendChatMessage("Assistant", payload?.content || "No response received.");
+});
+
+socket.on("buildReferenceResponse", (payload) => {
+  if (!payload || !payload.success) {
+    setAnalysisNote(payload?.reason || "Reference build failed.");
+    return;
+  }
+  setAnalysisNote(`Reference built for ${payload.category} with ${payload.n_samples} replicates.`);
+  socket.emit("get_analysis", { category: analysisCategory.value });
+});
+
+socket.on("sanityPlotResponse", (payload) => {
+  if (!payload || !payload.success) {
+    setAnalysisNote(payload?.reason || "Sanity plot failed.");
+    return;
+  }
+  setAnalysisNote(`Sanity plot passed: R² = ${payload.r2} for ${payload.category}.`);
+});
+
+socket.on("trainModelResponse", (payload) => {
+  if (!payload || !payload.success) {
+    setAnalysisNote(payload?.reason || "Model training failed.");
+    return;
+  }
+  setAnalysisNote(`Model trained for ${payload.category}: R² ${payload.r2}, RMSE ${payload.rmse}.`);
+  socket.emit("get_analysis", { category: analysisCategory.value });
+});
+
+socket.on("reportsData", (rows) => {
+  renderReports(rows || []);
+});
+
+socket.on("reportSaved", (payload) => {
+  if (payload?.success) {
+    setAnalysisNote(`Report saved for ${payload.category}.`);
+    socket.emit("get_reports", {});
+  }
+});
+
+function renderReports(rows) {
+  const tbody = document.getElementById("reports-body");
+  const preview = document.getElementById("pdf-preview");
+
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">No reports available.</td></tr>`;
+    if (preview) preview.srcdoc = "<html><body style='font-family:monospace;padding:24px'>No report selected.</body></html>";
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr data-report-id="${r.id}" class="report-row ${i === 0 ? "selected" : ""}">
+      <th scope="row">${r.type || `RPT-${String(r.id).padStart(4, "0")}`}</th>
+      <td>${r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
+    </tr>
+  `).join("");
+
+  tbody.querySelectorAll(".report-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      tbody.querySelectorAll(".report-row").forEach((el) => el.classList.remove("selected"));
+      row.classList.add("selected");
+      const report = rows.find((item) => Number(item.id) === Number(row.dataset.reportId));
+      if (preview) {
+        preview.srcdoc = `
+          <html><body style="font-family:monospace;padding:20px;background:#fff;color:#111">
+            <h3>${report?.type || "Report"}</h3>
+            <p>Category: ${report?.category || "—"}</p>
+            <p>Date: ${report?.created_at ? new Date(report.created_at).toLocaleString() : "—"}</p>
+            <p>Profile: ${report?.profile_id ?? "—"}</p>
+            <p>Model: ${report?.model_id ?? "—"}</p>
+          </body></html>`;
+      }
+    });
+  });
+
+  const first = tbody.querySelector(".report-row");
+  first?.dispatchEvent(new Event("click"));
+}
+
+const buildReferenceBtn = document.getElementById("build-ref-btn");
+const sanityPlotBtn = document.getElementById("sanity-plot-btn");
+const trainSamplesBtn = document.getElementById("train-samples-btn");
+const exportReportBtn = document.getElementById("export-analysis-btn");
+
+buildReferenceBtn?.addEventListener("click", () => {
+  socket.emit("build_reference", { category: analysisCategory.value });
+});
+
+sanityPlotBtn?.addEventListener("click", () => {
+  socket.emit("sanity_plot", { category: analysisCategory.value });
+});
+
+trainSamplesBtn?.addEventListener("click", () => {
+  socket.emit("train_model", { category: analysisCategory.value });
+});
+
+exportReportBtn?.addEventListener("click", () => {
+  socket.emit("export_report", { category: analysisCategory.value });
+});
+
+document.getElementById("chat-send-btn")?.addEventListener("click", () => {
+  const input = document.getElementById("chat-input");
+  const question = input?.value?.trim();
+  if (!question) return;
+  appendChatMessage("User", question);
+  input.value = "";
+  socket.emit("chat_send", { question, category: analysisCategory.value });
+});
+
+const chatInput = document.getElementById("chat-input");
+chatInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    document.getElementById("chat-send-btn")?.click();
+  }
+});
+
+const knownValueInput = document.getElementById("known-value");
+if (knownValueInput) {
+  knownValueInput.id = "setting-known-value";
+}
 
 const setAnalysisNote = (t) =>
   (document.getElementById("analysis-note").textContent = t || "");
@@ -440,7 +594,7 @@ function saveSettings() {
   scanSettings.isRef = document.getElementById("setting-reference").value;
   scanSettings.category = document.getElementById("setting-category").value;
   scanSettings.known_value =
-    parseFloat(document.getElementById("setting-known-value").value) || 0;
+    parseFloat(document.getElementById("setting-known-value")?.value || 0) || 0;
   document.getElementById("rd-name").textContent = scanSettings.name;
   document.getElementById("rd-gain").textContent = scanSettings.gain + "x";
   document.getElementById("rd-ref").textContent = scanSettings.isRef

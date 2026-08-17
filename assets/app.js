@@ -66,6 +66,7 @@ socket.on("sendSingleScan", (singleScanData) => {
   // Guard clause: Make sure we actually received valid array data
   if (!singleScanData || !Array.isArray(singleScanData)) {
     console.error("Expected an array but received:", singleScanData);
+    return;
   }
 
   // Store the real sensor array into your state
@@ -110,6 +111,14 @@ socket.on("sendSingleScan", (singleScanData) => {
   document.getElementById("rd-noise").textContent =
     noiseValue.toFixed(4) + " dB";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
+});
+
+socket.on("scanError", (payload) => {
+  showError(payload?.message || "Scan failed.");
+});
+
+socket.on("savedMeasurements", (rows) => {
+  renderMeasurementsTable(rows || []);
 });
 
 socket.on("saveDataResponse", (response) => {
@@ -158,6 +167,17 @@ function updateMaintenanceStatus(status) {
   if (service) service.textContent = `~${Math.max(0, 30 - (status?.dark_reference_age_hours ?? 18))} h`;
   const sensor = document.getElementById("maintenance-sensor");
   if (sensor) sensor.textContent = `${status?.sensor_health ?? "healthy"}`;
+
+  const calLamp = document.getElementById("lamp-cal");
+  if (calLamp) {
+    const calClass = status?.status === "warning" ? "alert"
+      : status?.status === "attention" ? "warn" : "on";
+    calLamp.className = `lamp ${calClass}`;
+  }
+  const sensorLamp = document.getElementById("lamp-sensor");
+  if (sensorLamp) {
+    sensorLamp.className = `lamp ${status?.sensor_health === "healthy" ? "on" : "alert"}`;
+  }
 }
 
 socket.on("maintenanceStatus", (status) => {
@@ -291,11 +311,6 @@ chatInput?.addEventListener("keydown", (event) => {
     document.getElementById("chat-send-btn")?.click();
   }
 });
-
-const knownValueInput = document.getElementById("known-value");
-if (knownValueInput) {
-  knownValueInput.id = "setting-known-value";
-}
 
 const setAnalysisNote = (t) =>
   (document.getElementById("analysis-note").textContent = t || "");
@@ -448,9 +463,10 @@ const RETRO_CONFIG = { displayModeBar: false, responsive: true };
 
 TESTER = document.getElementById("tester");
 
-// Mock wavelengths (nm) - 14 channels from AS7343
+// Wavelengths (nm) for the 12 AS7343 channels used by the firmware:
+// F1, F2, FZ, F3, F4, F5, FY, FXL, F6, F7, F8, NIR
 const wavelengths = [
-  340, 405, 425, 450, 475, 515, 550, 555, 600, 620, 670, 730, 855, 1000,
+  405, 425, 450, 475, 515, 550, 555, 600, 640, 690, 745, 855,
 ];
 
 const scanSettings = {
@@ -458,23 +474,15 @@ const scanSettings = {
   gain: 1,
   isRef: "No",
   category: "Other",
-  known_value: 0,
+  known_value: null,
 };
 
 const baselineBtn = document.getElementById("baseline-btn");
 const singleScanBtn = document.getElementById("single-scan-btn");
 const continuousBtn = document.getElementById("continuous-btn");
 const saveDataBtn = document.getElementById("save-data-btn");
-const settingsBtn = document.getElementById("settings-btn");
 const scanStatus = document.getElementById("scan-status");
-const settingsModal = document.getElementById("settings-modal");
-const settingsCancelBtn = document.getElementById("settings-cancel-btn");
 const settingsSaveBtn = document.getElementById("settings-save-btn");
-const integrationTimeInput = document.getElementById(
-  "setting-integration-time",
-);
-const gainSelect = document.getElementById("setting-gain");
-const averagingInput = document.getElementById("setting-averaging");
 
 saveDataBtn.disabled = true;
 isContinuous = false;
@@ -501,9 +509,6 @@ singleScanBtn?.addEventListener("click", runSingleScan);
 continuousBtn?.addEventListener("click", toggleContinuousScan);
 saveDataBtn?.addEventListener("click", saveData);
 settingsSaveBtn?.addEventListener("click", saveSettings);
-settingsModal?.addEventListener("click", (e) => {
-  if (e.target === settingsModal) closeSettingsModal();
-});
 
 function setScanStatus(text) {
   if (scanStatus) scanStatus.textContent = text;
@@ -593,8 +598,9 @@ function saveSettings() {
   scanSettings.gain = document.getElementById("setting-gain").value;
   scanSettings.isRef = document.getElementById("setting-reference").value;
   scanSettings.category = document.getElementById("setting-category").value;
-  scanSettings.known_value =
-    parseFloat(document.getElementById("setting-known-value")?.value || 0) || 0;
+  const knownValueRaw = document.getElementById("setting-known-value")?.value?.trim();
+  const parsedKnownValue = knownValueRaw ? parseFloat(knownValueRaw) : NaN;
+  scanSettings.known_value = Number.isNaN(parsedKnownValue) ? null : parsedKnownValue;
   document.getElementById("rd-name").textContent = scanSettings.name;
   document.getElementById("rd-gain").textContent = scanSettings.gain + "x";
   document.getElementById("rd-ref").textContent = scanSettings.isRef
@@ -616,13 +622,6 @@ function switchTab(event, tabId) {
   // Show the specific clicked panel and mark button as active
   document.getElementById(tabId).classList.add("active");
   event.currentTarget.classList.add("active");
-}
-
-function closeSettingsModal() {
-  if (!settingsModal) return;
-  if (settingsModal.classList.contains("show")) {
-    settingsModal.classList.remove("show");
-  }
 }
 
 socket.on("disconnect", () => {

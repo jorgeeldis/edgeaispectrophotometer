@@ -292,7 +292,15 @@ async def frontend_request_single_scan(sid, data=None):
     print("This is baseline: ", baseline)
     print("This is latest: ", latest_hardware_data)
 
-    lastScan = [math.log10(baseline[i] / latest_hardware_data[i]) for i in range(len(baseline))]
+    if not baseline or not latest_hardware_data:
+        print("Cannot compute single scan: baseline not captured yet.")
+        await ui.sio.emit('scanError', {"message": "Capture a baseline before running a scan."}, room=sid)
+        return
+
+    lastScan = [
+        math.log10(b / s) if b > 0 and s > 0 else 0.0
+        for b, s in zip(baseline, latest_hardware_data)
+    ]
 
     print("Frontend requested hardware single scan...")
 

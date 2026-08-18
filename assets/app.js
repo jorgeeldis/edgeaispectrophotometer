@@ -150,6 +150,10 @@ socket.on("connect", () => {
 
 let analysisRows = [];
 
+// Renders whatever compute_calibration_health() last sent. Only status,
+// scan_counter, and dark_reference_age_hours are derived from real state on
+// the backend — temperature/LED hours/drift are prototype placeholders (see
+// main.py), rendered here exactly the same as the live fields.
 function updateMaintenanceStatus(status) {
   const panel = document.getElementById("maintenance-status");
   if (panel) panel.textContent = status?.status || "healthy";
@@ -223,6 +227,9 @@ socket.on("sanityPlotResponse", (payload) => {
 function renderSanityPlot(payload) {
   const host = document.getElementById("sanity-plot-host");
   if (!host) return;
+  // The backend only includes levels/signal once it has enough data to fit
+  // a line at all — below that threshold there's nothing meaningful to
+  // plot, so the chart stays hidden rather than showing an empty/broken one.
   if (!payload || !payload.levels || !payload.levels.length) {
     host.style.display = "none";
     return;
@@ -317,6 +324,10 @@ function renderReports(rows) {
       row.classList.add("selected");
       const report = rows.find((item) => Number(item.id) === Number(row.dataset.reportId));
       if (preview) {
+        // report.path is a relative URL like "reports/water_....html" — the
+        // file was written directly into assets/reports/ by the backend, and
+        // WebUI serves assets/ from disk, so it's already fetchable with no
+        // extra route.
         if (report?.path) {
           preview.src = report.path;
         } else {
@@ -615,6 +626,9 @@ function toggleContinuousScan() {
   document.getElementById("readout-title").textContent = "Peak Absorbance";
 
   if (continuousBtn.textContent === "Continuous") {
+    // 2000ms matches the firmware's own acquisition cadence — polling
+    // faster wouldn't surface new data any sooner, since record_sensor_samples
+    // only lands a fresh reading about once every 2 seconds.
     continuousIntervalId = setInterval(() => {
       socket.emit("get_single_scan", {});
     }, 2000);
@@ -645,6 +659,9 @@ function saveData() {
     raw_counts: scanState.lastScan,
     saturated: 0,
     is_reference: isReference ? 1 : 0,
+    // A reference sample is always the 0% point of its dilution series.
+    // For anything else, known_value stays whatever Settings left it —
+    // null if the operator left it blank (an unlabeled quick scan), not 0.
     known_value: isReference ? 0 : scanSettings.known_value,
   };
 

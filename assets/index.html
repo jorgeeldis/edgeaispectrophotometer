@@ -63,11 +63,14 @@ SPDX-License-Identifier: MPL-2.0
             <span id="peak-abs">0.000</span>
             <h4 id="readout-title">Peak Absorbance</h4>
           </div>
+          <!-- Static placeholders below are overwritten by app.js as soon as a
+               Baseline or Single Scan comes back (units switch between "counts"
+               and "AU" depending on which one just ran). -->
           <h4>Channel Summary</h4>
-          <div class="readout-row"><span>MAX</span><strong id="rd-max">— dB @ — nm</strong></div>
-          <div class="readout-row"><span>MIN</span><strong id="rd-min">— dB @ — nm</strong></div>
+          <div class="readout-row"><span>MAX</span><strong id="rd-max">— AU @ — nm</strong></div>
+          <div class="readout-row"><span>MIN</span><strong id="rd-min">— AU @ — nm</strong></div>
           <div class="readout-row"><span>MEAN</span><strong id="rd-mean">—</strong></div>
-          <div class="readout-row"><span>NOISE σ</span><strong id="rd-noise">0 dB</strong></div>
+          <div class="readout-row"><span>NOISE σ</span><strong id="rd-noise">0 AU</strong></div>
           <h4 style="margin-top:14px">Measurement Parameters</h4>
           <div class="readout-row"><span>NAME</span><strong id="rd-name">Sample 1</strong></div>
           <div class="readout-row"><span>GAIN</span><strong id="rd-gain">4x</strong></div>
@@ -425,7 +428,9 @@ SPDX-License-Identifier: MPL-2.0
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal: data-bs-backdrop="static" is deliberate — an operator mid-way through
+         filling in sample settings shouldn't lose that state from an accidental
+         click outside the dialog, so only Cancel/Save close it. -->
     <div id="fullModal">
       <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
         aria-labelledby="staticBackdropLabel" aria-hidden="true">

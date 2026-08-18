@@ -15,6 +15,10 @@ import pandas
 
 ui = WebUI()
 
+# assets/ sits next to python/ in the project layout; WebUI serves assets/
+# from disk, so anything written under REPORTS_DIR is immediately reachable
+# from the browser at the relative URL "reports/<filename>" with no extra
+# server route needed.
 REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "reports")
 
 # Stores the latest spectrum received from Arduino
@@ -22,6 +26,12 @@ latest_hardware_data = []
 baseline = []
 lastScan = []
 latest_baseline_id = None
+
+# scan_counter and last_baseline_at are the only fields here derived from
+# real, live state (see compute_calibration_health). temperature_c, sensor_health,
+# led_hours, and baseline_drift_percent are prototype placeholders — nothing
+# currently reads real telemetry for them; temperature_c just nudges up 0.1°C
+# per saved measurement as a stand-in until real sensor readout is wired up.
 maintenance_state = {
     "scan_counter": 0,
     "last_baseline_at": None,
@@ -152,6 +162,10 @@ def get_active_model(category):
 
 
 def compute_calibration_health():
+    # Three independent signals escalate the status together rather than a
+    # single flag, so an operator can see *why* recalibration is being asked
+    # for (too many scans since baseline vs. baseline just getting old vs.
+    # measured drift) instead of a single opaque "needs attention".
     now = datetime.datetime.utcnow()
     age_hours = 0.0
     if maintenance_state["last_baseline_at"] is not None:
@@ -194,6 +208,10 @@ def predict_with_model(model, spectrum):
     if spec.size < coeffs.size:
         spec = np.pad(spec, (0, coeffs.size - spec.size), constant_values=0.0)
     pred = float(np.dot(coeffs[:spec.size], spec[:coeffs.size]) + intercept)
+    # Confidence is a simple heuristic derived from training RMSE, not a
+    # statistical prediction interval — a tighter-fitting model (lower RMSE)
+    # reports higher confidence, floored so a very noisy fit never claims 0%
+    # and capped at 100%.
     conf = max(0.0, min(1.0, 1.0 / (1.0 + max(float(model.get("rmse", 0.0) or 0.0), 0.05))))
     return pred, round(conf, 4)
 
@@ -273,6 +291,9 @@ llm = LargeLanguageModel(
 
 
 # Arduino MCU → Python MPU
+# Registered below with Bridge.provide("record_sensor_samples", ...) — the
+# firmware's Bridge.notify() call in sketch.ino's loop() lands here roughly
+# every 2 seconds, continuously, whether or not anyone is looking at the UI.
 def record_sensor_samples(
 
     F1: float,
@@ -353,6 +374,10 @@ async def frontend_request_single_scan(sid, data=None):
         await ui.sio.emit('scanError', {"message": "Capture a baseline before running a scan."}, room=sid)
         return
 
+    # log10(baseline / sample) is the standard Beer-Lambert absorbance
+    # transform; zip() also protects against baseline/latest_hardware_data
+    # having drifted to different lengths, and the b/s > 0 guard avoids a
+    # ZeroDivisionError or a log10 domain error on a dead/saturated channel.
     lastScan = [
         math.log10(b / s) if b > 0 and s > 0 else 0.0
         for b, s in zip(baseline, latest_hardware_data)
@@ -460,6 +485,10 @@ async def handle_build_reference(sid, data=None):
 
 @ui.sio.on('sanity_plot')
 async def handle_sanity_plot(sid, data=None):
+    # Fits known concentration against summed signal and gates on R² before
+    # Train Model is trusted — this exists to catch an optical or electronic
+    # fault (bad seal, misaligned cuvette, dying LED) before it gets blamed
+    # on the regression model instead of the instrument.
     category = (data or {}).get("category") or "Other"
     rows = [dict(r) for r in db.read("measurement") if str(r.get("category")) == str(category) and r.get("known_value") is not None]
     if len(rows) < 15:
@@ -535,6 +564,11 @@ async def handle_train_model(sid, data=None):
 
     X = np.vstack(X)
     y = np.asarray(y, dtype=float)
+    # Ordinary least squares over the twelve raw channels — chosen for a
+    # linear-in-concentration signal (Beer-Lambert) and a small per-category
+    # sample count where a heavier model would just overfit. Note this is an
+    # in-sample fit: R²/RMSE/MAE below are computed against the same rows
+    # the model was trained on, not held-out cross-validation.
     coef, _, _, _ = np.linalg.lstsq(X, y, rcond=None)
     pred = X @ coef
     residual = y - pred
@@ -571,6 +605,10 @@ async def handle_get_reports(sid, data=None):
     await ui.sio.emit('reportsData', rows, room=sid)
 
 
+# Renders a spectrum as a plain inline SVG polyline instead of pulling in a
+# plotting library — the on-device runtime can't be assumed to have a full
+# charting stack, and this keeps the generated report a single dependency-free
+# HTML file.
 def _svg_spectrum(values, width=520, height=120, color="#b6551c"):
     if not values:
         return "<p><em>No spectrum recorded.</em></p>"
@@ -773,6 +811,9 @@ async def handle_chat_send(sid, data=None):
     prompt = f"[Current analysis category: {category}]\n{question}"
 
     try:
+        # llm.chat() is a blocking call, and on-device inference can take a
+        # noticeable moment — running it in the default executor keeps a slow
+        # response from stalling every other socket handler in the meantime.
         loop = asyncio.get_event_loop()
         answer = await loop.run_in_executor(None, llm.chat, prompt)
     except Exception as e:
@@ -806,6 +847,10 @@ async def handle_analysis(sid, data=None):
         means = np.asarray(json.loads(profile["channel_means"]), dtype=float)
         stds = np.asarray(json.loads(profile["channel_stds"]), dtype=float)
     else:
+        # No Build Reference has been run yet for this category — fall back
+        # to computing an ad-hoc mean/std directly from whatever reference-
+        # flagged rows exist, so deviation scoring still works before the
+        # operator has formally built a profile.
         refs = [normalize_spectrum(json.loads(m["raw_counts"])) for m in rows if int(m.get("is_reference", 0)) == 1]
         means = stds = None
         if len(refs) >= 2:

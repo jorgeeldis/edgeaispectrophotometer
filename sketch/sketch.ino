@@ -71,7 +71,9 @@ void setup()
     if (!mySensor.powerOn())
         halt("Failed to power on device.");
 
-    // Configure the sensor to automatically read all spectral channels
+    // AutoSmux cycles the sensor's internal multiplexer across all channel
+    // groups on its own, so a single readSpectraDataFromSensor() call
+    // returns every channel without manually stepping the SMUX ourselves.
     if (!mySensor.setAutoSmux(AUTOSMUX_18_CHANNELS))
         halt("Failed to configure AutoSmux.");
 
@@ -91,7 +93,9 @@ void setup()
 // Continuously acquires spectral data and sends it to Python.
 void loop()
 {
-    // Turn off the onboard LED before taking measurements
+    // Illumination comes from the optical chamber's own light source, not
+    // the sensor's onboard LED — leaving it on would bleed extra light into
+    // every reading, so it's switched off before each acquisition.
     mySensor.ledOff();
 
     // Trigger a new spectral acquisition
@@ -121,6 +125,10 @@ void loop()
     }
 
     // Send data to the Python application through Arduino Router Bridge.
+    // "record_sensor_samples" is a name, not a function pointer — it has to
+    // match the name Bridge.provide() registers on the Python side, and the
+    // twelve arguments have to line up positionally with that function's
+    // parameters.
     Bridge.notify(
         "record_sensor_samples", values[0], values[1], values[2], values[3],
         values[4], values[5], values[6], values[7],

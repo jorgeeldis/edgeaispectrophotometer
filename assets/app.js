@@ -273,7 +273,14 @@ socket.on("reportSaved", (payload) => {
   }
 });
 
-function updateReportLink(report) {
+function updateReportViewer(report) {
+  const title = document.getElementById("report-viewer-title");
+  if (title) {
+    title.textContent = report
+      ? `${report.type || "Report"} — ${report.category || "—"} — ${report.created_at ? new Date(report.created_at).toLocaleString() : "—"}`
+      : "No report selected";
+  }
+
   const link = document.getElementById("report-open-link");
   if (!link) return;
   if (report?.path) {
@@ -293,7 +300,7 @@ function renderReports(rows) {
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">No reports available.</td></tr>`;
     if (preview) preview.srcdoc = "<html><body style='font-family:monospace;padding:24px'>No report selected.</body></html>";
-    updateReportLink(null);
+    updateReportViewer(null);
     return;
   }
 
@@ -316,7 +323,7 @@ function renderReports(rows) {
           preview.srcdoc = "<html><body style='font-family:monospace;padding:20px'>Report file not found.</body></html>";
         }
       }
-      updateReportLink(report);
+      updateReportViewer(report);
     });
   });
 

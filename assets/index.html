@@ -258,13 +258,16 @@ SPDX-License-Identifier: MPL-2.0
           </div>
         </div>
         <div class="col">
-          <div class="scope-well" style="min-height:300px">
-            <iframe id="pdf-preview" style="width:100%;height:385px;border:0;background:#fff"></iframe>
+          <div class="scope-well" style="min-height:300px; display:flex; flex-direction:column">
+            <div class="report-viewer-toolbar">
+              <span id="report-viewer-title">No report selected</span>
+              <a id="report-open-link" href="#" target="_blank" rel="noopener"
+                 class="report-viewer-open-btn" style="display:none">
+                Open in New Tab ↗
+              </a>
+            </div>
+            <iframe id="pdf-preview" style="flex:1; width:100%; height:340px; border:0; background:#fff; border-radius:3px"></iframe>
           </div>
-          <a id="report-open-link" href="#" target="_blank" rel="noopener"
-             class="tab-btn-analysis" style="display:none; margin-top:8px; text-align:center; text-decoration:none">
-            Open Full Report ↗
-          </a>
         </div>
       </div>
     </div>

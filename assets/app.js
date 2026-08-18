@@ -208,12 +208,48 @@ socket.on("buildReferenceResponse", (payload) => {
 });
 
 socket.on("sanityPlotResponse", (payload) => {
-  if (!payload || !payload.success) {
+  renderSanityPlot(payload);
+  if (!payload || !payload.levels) {
     setAnalysisNote(payload?.reason || "Sanity plot failed.");
     return;
   }
-  setAnalysisNote(`Sanity plot passed: R² = ${payload.r2} for ${payload.category}.`);
+  setAnalysisNote(
+    payload.success
+      ? `Sanity plot passed: R² = ${payload.r2} for ${payload.category}.`
+      : (payload.reason || `Sanity plot: R² = ${payload.r2} for ${payload.category}.`)
+  );
 });
+
+function renderSanityPlot(payload) {
+  const host = document.getElementById("sanity-plot-host");
+  if (!host) return;
+  if (!payload || !payload.levels || !payload.levels.length) {
+    host.style.display = "none";
+    return;
+  }
+
+  host.style.display = "block";
+  const xs = payload.levels;
+  const ys = payload.signal;
+  const lineXs = [Math.min(...xs), Math.max(...xs)];
+  const lineYs = lineXs.map((x) => payload.fit_slope * x + payload.fit_intercept);
+
+  Plotly.react(
+    "sanity-plot",
+    [
+      {
+        x: xs, y: ys, type: "scatter", mode: "markers", name: "Measured",
+        marker: { color: "#FFD08A", size: 9 },
+      },
+      {
+        x: lineXs, y: lineYs, type: "scatter", mode: "lines", name: "Fit",
+        line: { color: "#FFB347", width: 2 },
+      },
+    ],
+    RETRO_LAYOUT_SANITY,
+    RETRO_CONFIG,
+  );
+}
 
 socket.on("trainModelResponse", (payload) => {
   if (!payload || !payload.success) {
@@ -232,8 +268,22 @@ socket.on("reportSaved", (payload) => {
   if (payload?.success) {
     setAnalysisNote(`Report saved for ${payload.category}.`);
     socket.emit("get_reports", {});
+  } else {
+    setAnalysisNote(payload?.error || "Report export failed.");
   }
 });
+
+function updateReportLink(report) {
+  const link = document.getElementById("report-open-link");
+  if (!link) return;
+  if (report?.path) {
+    link.href = report.path;
+    link.style.display = "inline-block";
+  } else {
+    link.removeAttribute("href");
+    link.style.display = "none";
+  }
+}
 
 function renderReports(rows) {
   const tbody = document.getElementById("reports-body");
@@ -243,6 +293,7 @@ function renderReports(rows) {
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">No reports available.</td></tr>`;
     if (preview) preview.srcdoc = "<html><body style='font-family:monospace;padding:24px'>No report selected.</body></html>";
+    updateReportLink(null);
     return;
   }
 
@@ -259,15 +310,13 @@ function renderReports(rows) {
       row.classList.add("selected");
       const report = rows.find((item) => Number(item.id) === Number(row.dataset.reportId));
       if (preview) {
-        preview.srcdoc = `
-          <html><body style="font-family:monospace;padding:20px;background:#fff;color:#111">
-            <h3>${report?.type || "Report"}</h3>
-            <p>Category: ${report?.category || "—"}</p>
-            <p>Date: ${report?.created_at ? new Date(report.created_at).toLocaleString() : "—"}</p>
-            <p>Profile: ${report?.profile_id ?? "—"}</p>
-            <p>Model: ${report?.model_id ?? "—"}</p>
-          </body></html>`;
+        if (report?.path) {
+          preview.src = report.path;
+        } else {
+          preview.srcdoc = "<html><body style='font-family:monospace;padding:20px'>Report file not found.</body></html>";
+        }
       }
+      updateReportLink(report);
     });
   });
 
@@ -457,6 +506,34 @@ const RETRO_LAYOUT = {
     tickfont: { size: 14 },
   },
   showlegend: false,
+};
+
+const RETRO_LAYOUT_SANITY = {
+  paper_bgcolor: "rgba(0,0,0,0)",
+  plot_bgcolor: "rgba(0,0,0,0)",
+  margin: { t: 14, l: 60, r: 16, b: 42 },
+  autosize: true,
+  height: 260,
+  font: {
+    family: "ui-monospace, Menlo, Consolas, monospace",
+    size: 14,
+    color: "#8FA98B",
+  },
+  xaxis: {
+    title: { text: "KNOWN VALUE", font: { size: 14 } },
+    gridcolor: "rgba(143,169,139,.16)",
+    zerolinecolor: "rgba(143,169,139,.3)",
+    linecolor: "rgba(143,169,139,.4)",
+    tickfont: { size: 14 },
+  },
+  yaxis: {
+    title: { text: "SIGNAL (SUM)", font: { size: 14 } },
+    gridcolor: "rgba(143,169,139,.16)",
+    zerolinecolor: "rgba(143,169,139,.3)",
+    linecolor: "rgba(143,169,139,.4)",
+    tickfont: { size: 14 },
+  },
+  showlegend: true,
 };
 
 const RETRO_CONFIG = { displayModeBar: false, responsive: true };

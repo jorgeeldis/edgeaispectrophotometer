@@ -8,9 +8,13 @@ import math
 import json
 import datetime
 import asyncio
+import os
+from html import escape as _esc
 import pandas
 
 ui = WebUI()
+
+REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "reports")
 
 # Stores the latest spectrum received from Arduino
 latest_hardware_data = []
@@ -484,7 +488,16 @@ async def handle_sanity_plot(sid, data=None):
     r2 = 1.0 if ss_tot == 0 else float(1 - ss_res / ss_tot)
 
     reason = None if r2 > 0.99 else "Sanity plot drifted below R² > 0.99; check the optical path before training."
-    await ui.sio.emit('sanityPlotResponse', {"success": r2 > 0.99, "category": category, "r2": round(r2, 4), "reason": reason}, room=sid)
+    await ui.sio.emit('sanityPlotResponse', {
+        "success": r2 > 0.99,
+        "category": category,
+        "r2": round(r2, 4),
+        "reason": reason,
+        "levels": x.tolist(),
+        "signal": y.tolist(),
+        "fit_slope": float(slope),
+        "fit_intercept": float(intercept),
+    }, room=sid)
 
 
 @ui.sio.on('train_model')
@@ -550,23 +563,188 @@ async def handle_get_reports(sid, data=None):
     await ui.sio.emit('reportsData', rows, room=sid)
 
 
+def _svg_spectrum(values, width=520, height=120, color="#b6551c"):
+    if not values:
+        return "<p><em>No spectrum recorded.</em></p>"
+    vmin, vmax = min(values), max(values)
+    rng = (vmax - vmin) or 1.0
+    n = len(values)
+    step = width / max(n - 1, 1)
+    points = []
+    for i, v in enumerate(values):
+        x = i * step
+        y = height - ((v - vmin) / rng) * (height - 10) - 5
+        points.append(f"{x:.1f},{y:.1f}")
+    polyline = " ".join(points)
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" '
+        f'xmlns="http://www.w3.org/2000/svg" style="background:#fdfaf0;border:1px solid #ccc">'
+        f'<polyline points="{polyline}" fill="none" stroke="{color}" stroke-width="2" /></svg>'
+    )
+
+
+def render_report_html(category, timestamp, baseline_row, profile, model, health, measurements):
+    baseline_html = "<p><em>No baseline captured.</em></p>"
+    if baseline_row:
+        counts = json.loads(baseline_row.get("raw_counts") or "[]")
+        baseline_html = (
+            f"<p>Captured: {_esc(str(baseline_row.get('created_at')))}</p>"
+            f"{_svg_spectrum(counts)}"
+        )
+
+    profile_html = "<p><em>No active reference profile for this category.</em></p>"
+    if profile:
+        profile_html = (
+            f"<p>Built: {_esc(str(profile.get('created_at')))} "
+            f"from {profile.get('n_samples')} replicates</p>"
+        )
+
+    model_html = "<p><em>No trained model for this category.</em></p>"
+    if model:
+        model_html = (
+            f"<p>Trained: {_esc(str(model.get('created_at')))} "
+            f"on {model.get('n_samples')} samples</p>"
+            f"<p>R&sup2; = {model.get('r2')}, RMSE = {model.get('rmse')}, MAE = {model.get('mae')}</p>"
+        )
+
+    rows_html = ""
+    for m in measurements:
+        dev = m.get("dev")
+        status = (
+            "PASS" if dev is not None and dev < 2 else
+            "ATTENTION" if dev is not None and dev < 3 else
+            "REJECT" if dev is not None else "—"
+        )
+        rows_html += f"""
+        <tr>
+          <td>{_esc(str(m.get('name')))}</td>
+          <td>{_esc(str(m.get('created_at')))}</td>
+          <td>{m.get('known_value') if m.get('known_value') is not None else '—'}</td>
+          <td>{'YES' if m.get('is_reference') else 'no'}</td>
+          <td>{dev if dev is not None else '—'}</td>
+          <td>{m.get('pred') if m.get('pred') is not None else '—'}</td>
+          <td>{m.get('conf') if m.get('conf') is not None else '—'}</td>
+          <td>{status}</td>
+          <td style="min-width:160px">{_svg_spectrum(m.get('spectrum'))}</td>
+        </tr>"""
+
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8">
+<title>{_esc(category)} Compliance Report</title>
+<style>
+  body {{ font-family: ui-monospace, Menlo, Consolas, monospace; padding: 24px; color: #2b2b1f; background: #FBF7EA; }}
+  h1, h2 {{ margin-bottom: 4px; }}
+  table {{ border-collapse: collapse; width: 100%; margin-top: 8px; }}
+  th, td {{ border: 1px solid #ccc; padding: 6px 8px; font-size: 12px; text-align: left; }}
+  section {{ margin-bottom: 24px; }}
+</style>
+</head>
+<body>
+  <h1>Edge-AI Spectrophotometer — Compliance Report</h1>
+  <p>Category: <strong>{_esc(category)}</strong> &nbsp;|&nbsp; Generated: {timestamp.isoformat(timespec='seconds')}Z</p>
+
+  <section>
+    <h2>Instrument Status</h2>
+    <p>Calibration: {_esc(str(health.get('status')))} &nbsp;|&nbsp;
+       Dark reference age: {health.get('dark_reference_age_hours')} h &nbsp;|&nbsp;
+       Baseline drift: {health.get('baseline_drift_percent')}% &nbsp;|&nbsp;
+       Sensor: {_esc(str(health.get('sensor_health')))} &nbsp;|&nbsp;
+       Firmware: {_esc(str(health.get('firmware_version')))}</p>
+  </section>
+
+  <section>
+    <h2>Baseline Used</h2>
+    {baseline_html}
+  </section>
+
+  <section>
+    <h2>Active Reference Profile</h2>
+    {profile_html}
+  </section>
+
+  <section>
+    <h2>Active Prediction Model</h2>
+    {model_html}
+  </section>
+
+  <section>
+    <h2>Measurements ({len(measurements)})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th><th>Date</th><th>Known Value</th><th>Reference?</th>
+          <th>Dev &sigma;</th><th>Pred</th><th>Conf</th><th>Status</th><th>Spectrum</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+  </section>
+</body></html>"""
+
+
 @ui.sio.on('export_report')
 async def handle_export_report(sid, data=None):
     category = (data or {}).get("category") or "Other"
     profile = get_active_profile(category)
     model = get_active_model(category)
-    path = f"reports/{category.lower()}_{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')}.html"
+    health = compute_calibration_health()
+
+    baseline_rows = db.read("baseline")
+    baseline_row = dict(baseline_rows[-1]) if baseline_rows else None
+
+    means = stds = None
+    if profile:
+        means = np.asarray(json.loads(profile["channel_means"]), dtype=float)
+        stds = np.asarray(json.loads(profile["channel_stds"]), dtype=float)
+
+    rows = [dict(r) for r in db.read("measurement") if str(r.get("category")) == str(category)][-20:]
+    measurements = []
+    for m in rows:
+        arr = normalize_spectrum(json.loads(m.get("raw_counts", "[]")))
+        dev = pred = conf = None
+        if arr is not None:
+            if means is not None and stds is not None:
+                z = (arr - means) / stds
+                dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
+            if model:
+                pred, conf = predict_with_model(model, arr)
+        measurements.append({
+            "name": m.get("name"),
+            "created_at": m.get("created_at"),
+            "known_value": m.get("known_value"),
+            "is_reference": bool(m.get("is_reference")),
+            "dev": dev,
+            "pred": None if pred is None else round(float(pred), 3),
+            "conf": conf,
+            "spectrum": arr.tolist() if arr is not None else None,
+        })
+
+    timestamp = datetime.datetime.utcnow()
+    filename = f"{category.lower()}_{timestamp.strftime('%Y%m%d%H%M%S')}.html"
+    rel_path = f"reports/{filename}"
+
+    report_html = render_report_html(category, timestamp, baseline_row, profile, model, health, measurements)
+
+    try:
+        os.makedirs(REPORTS_DIR, exist_ok=True)
+        with open(os.path.join(REPORTS_DIR, filename), "w", encoding="utf-8") as f:
+            f.write(report_html)
+    except OSError as e:
+        print("export_report failed to write file:", e)
+        await ui.sio.emit('reportSaved', {"success": False, "error": str(e)}, room=sid)
+        return
+
     report_id = db.store("report", {
-        "created_at": datetime.datetime.utcnow().isoformat(),
+        "created_at": timestamp.isoformat(),
         "category": category,
-        "type": "PDF preview",
+        "type": "Compliance Report",
         "profile_id": profile.get("id") if profile else None,
         "model_id": model.get("id") if model else None,
-        "path": path,
-        "description": f"{category} report",
+        "path": rel_path,
+        "description": f"{category} report ({len(measurements)} measurements)",
         "is_active": 1,
     })
-    await ui.sio.emit('reportSaved', {"success": True, "report_id": report_id, "path": path, "category": category}, room=sid)
+    await ui.sio.emit('reportSaved', {"success": True, "report_id": report_id, "path": rel_path, "category": category}, room=sid)
     await handle_get_reports(sid)
 
 

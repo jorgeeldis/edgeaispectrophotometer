@@ -9,6 +9,7 @@ import json
 import datetime
 import asyncio
 import os
+import traceback
 from html import escape as _esc
 import pandas
 
@@ -685,67 +686,67 @@ def render_report_html(category, timestamp, baseline_row, profile, model, health
 @ui.sio.on('export_report')
 async def handle_export_report(sid, data=None):
     category = (data or {}).get("category") or "Other"
-    profile = get_active_profile(category)
-    model = get_active_model(category)
-    health = compute_calibration_health()
-
-    baseline_rows = db.read("baseline")
-    baseline_row = dict(baseline_rows[-1]) if baseline_rows else None
-
-    means = stds = None
-    if profile:
-        means = np.asarray(json.loads(profile["channel_means"]), dtype=float)
-        stds = np.asarray(json.loads(profile["channel_stds"]), dtype=float)
-
-    rows = [dict(r) for r in db.read("measurement") if str(r.get("category")) == str(category)][-20:]
-    measurements = []
-    for m in rows:
-        arr = normalize_spectrum(json.loads(m.get("raw_counts", "[]")))
-        dev = pred = conf = None
-        if arr is not None:
-            if means is not None and stds is not None:
-                z = (arr - means) / stds
-                dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
-            if model:
-                pred, conf = predict_with_model(model, arr)
-        measurements.append({
-            "name": m.get("name"),
-            "created_at": m.get("created_at"),
-            "known_value": m.get("known_value"),
-            "is_reference": bool(m.get("is_reference")),
-            "dev": dev,
-            "pred": None if pred is None else round(float(pred), 3),
-            "conf": conf,
-            "spectrum": arr.tolist() if arr is not None else None,
-        })
-
-    timestamp = datetime.datetime.utcnow()
-    filename = f"{category.lower()}_{timestamp.strftime('%Y%m%d%H%M%S')}.html"
-    rel_path = f"reports/{filename}"
-
-    report_html = render_report_html(category, timestamp, baseline_row, profile, model, health, measurements)
-
     try:
+        profile = get_active_profile(category)
+        model = get_active_model(category)
+        health = compute_calibration_health()
+
+        baseline_rows = db.read("baseline")
+        baseline_row = dict(baseline_rows[-1]) if baseline_rows else None
+
+        means = stds = None
+        if profile:
+            means = np.asarray(json.loads(profile["channel_means"]), dtype=float)
+            stds = np.asarray(json.loads(profile["channel_stds"]), dtype=float)
+
+        rows = [dict(r) for r in db.read("measurement") if str(r.get("category")) == str(category)][-20:]
+        measurements = []
+        for m in rows:
+            arr = normalize_spectrum(json.loads(m.get("raw_counts", "[]")))
+            dev = pred = conf = None
+            if arr is not None:
+                if means is not None and stds is not None:
+                    z = (arr - means) / stds
+                    dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
+                if model:
+                    pred, conf = predict_with_model(model, arr)
+            measurements.append({
+                "name": m.get("name"),
+                "created_at": m.get("created_at"),
+                "known_value": m.get("known_value"),
+                "is_reference": bool(m.get("is_reference")),
+                "dev": dev,
+                "pred": None if pred is None else round(float(pred), 3),
+                "conf": conf,
+                "spectrum": arr.tolist() if arr is not None else None,
+            })
+
+        timestamp = datetime.datetime.utcnow()
+        filename = f"{category.lower()}_{timestamp.strftime('%Y%m%d%H%M%S')}.html"
+        rel_path = f"reports/{filename}"
+
+        report_html = render_report_html(category, timestamp, baseline_row, profile, model, health, measurements)
+
         os.makedirs(REPORTS_DIR, exist_ok=True)
         with open(os.path.join(REPORTS_DIR, filename), "w", encoding="utf-8") as f:
             f.write(report_html)
-    except OSError as e:
-        print("export_report failed to write file:", e)
-        await ui.sio.emit('reportSaved', {"success": False, "error": str(e)}, room=sid)
-        return
 
-    report_id = db.store("report", {
-        "created_at": timestamp.isoformat(),
-        "category": category,
-        "type": "Compliance Report",
-        "profile_id": profile.get("id") if profile else None,
-        "model_id": model.get("id") if model else None,
-        "path": rel_path,
-        "description": f"{category} report ({len(measurements)} measurements)",
-        "is_active": 1,
-    })
-    await ui.sio.emit('reportSaved', {"success": True, "report_id": report_id, "path": rel_path, "category": category}, room=sid)
-    await handle_get_reports(sid)
+        report_id = db.store("report", {
+            "created_at": timestamp.isoformat(),
+            "category": category,
+            "type": "Compliance Report",
+            "profile_id": profile.get("id") if profile else None,
+            "model_id": model.get("id") if model else None,
+            "path": rel_path,
+            "description": f"{category} report ({len(measurements)} measurements)",
+            "is_active": 1,
+        })
+        await ui.sio.emit('reportSaved', {"success": True, "report_id": report_id, "path": rel_path, "category": category}, room=sid)
+        await handle_get_reports(sid)
+    except Exception as e:
+        print("export_report failed:")
+        traceback.print_exc()
+        await ui.sio.emit('reportSaved', {"success": False, "error": str(e)}, room=sid)
 
 
 @ui.sio.on('chat_send')

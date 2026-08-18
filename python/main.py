@@ -375,16 +375,23 @@ async def save_measurement(sid, data):
     print("the latest_baseline_id is ", baseline_id)
 
     try:
-        measurement_id = db.store("measurement", {
+        payload = {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
             "name": data.get("name"),
             "category": data.get("category"),
-            "baseline_id": baseline_id,
             "raw_counts": json.dumps(data.get("raw_counts")),
             "saturated": int(data.get("saturated")),
             "is_reference": int(data.get("is_reference")),
-            "known_value": data.get("known_value"),
-        })
+        }
+        # SQLStore rejects None outright, so nullable FK/optional columns are
+        # only included when they actually have a value.
+        if baseline_id is not None:
+            payload["baseline_id"] = baseline_id
+        known_value = data.get("known_value")
+        if known_value is not None:
+            payload["known_value"] = known_value
+
+        measurement_id = db.store("measurement", payload)
 
         maintenance_state["scan_counter"] = int(maintenance_state.get("scan_counter", 0)) + 1
         maintenance_state["temperature_c"] = round(float(maintenance_state["temperature_c"]) + 0.1, 1)
@@ -731,16 +738,22 @@ async def handle_export_report(sid, data=None):
         with open(os.path.join(REPORTS_DIR, filename), "w", encoding="utf-8") as f:
             f.write(report_html)
 
-        report_id = db.store("report", {
+        report_payload = {
             "created_at": timestamp.isoformat(),
             "category": category,
             "type": "Compliance Report",
-            "profile_id": profile.get("id") if profile else None,
-            "model_id": model.get("id") if model else None,
             "path": rel_path,
             "description": f"{category} report ({len(measurements)} measurements)",
             "is_active": 1,
-        })
+        }
+        # SQLStore rejects None outright, so these optional FKs are only
+        # included when there's an active profile/model to point at.
+        if profile:
+            report_payload["profile_id"] = profile.get("id")
+        if model:
+            report_payload["model_id"] = model.get("id")
+
+        report_id = db.store("report", report_payload)
         await ui.sio.emit('reportSaved', {"success": True, "report_id": report_id, "path": rel_path, "category": category}, room=sid)
         await handle_get_reports(sid)
     except Exception as e:

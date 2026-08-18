@@ -1,10 +1,13 @@
 from arduino.app_utils import *
 from arduino.app_bricks.web_ui import WebUI
 from arduino.app_bricks.dbstorage_sqlstore import SQLStore
+from arduino.app_bricks.llm import LargeLanguageModel, tool
+from arduino.app_bricks.cloud_llm import SQLMessagePersistence
 import numpy as np
 import math
 import json
 import datetime
+import asyncio
 import pandas
 
 ui = WebUI()
@@ -172,32 +175,6 @@ def compute_calibration_health():
     }
 
 
-def build_context(category=None):
-    category = category or "Water"
-    recent = [dict(r) for r in db.read("measurement")][-5:]
-    profile = get_active_profile(category)
-    if profile is None:
-        for alt in ("Water", "Coffee", "Milk", "Other"):
-            profile = get_active_profile(alt)
-            if profile is not None:
-                break
-    model = get_active_model(category)
-    if model is None:
-        for alt in ("Water", "Coffee", "Milk", "Other"):
-            model = get_active_model(alt)
-            if model is not None:
-                break
-    health = compute_calibration_health()
-    return {
-        "recent_measurements": recent,
-        "active_profile": profile,
-        "model_metrics": model,
-        "calibration_age_hours": health["dark_reference_age_hours"],
-        "drift_percent": health["baseline_drift_percent"],
-        "health_status": health["status"],
-    }
-
-
 def predict_with_model(model, spectrum):
     if not model:
         return None, None
@@ -214,6 +191,80 @@ def predict_with_model(model, spectrum):
     pred = float(np.dot(coeffs[:spec.size], spec[:coeffs.size]) + intercept)
     conf = max(0.0, min(1.0, 1.0 / (1.0 + max(float(model.get("rmse", 0.0) or 0.0), 0.05))))
     return pred, round(conf, 4)
+
+
+# Tools the on-device LLM can call to look up real instrument data
+# instead of guessing at measurements, calibration, or model quality.
+
+@tool
+def get_recent_measurements(category: str = "") -> str:
+    """
+    Return a short summary of the most recently saved measurements.
+    If category is one of Water, Coffee, Milk or Other, only that
+    category's most recent rows are included.
+    """
+    rows = [dict(r) for r in db.read("measurement")]
+    if category:
+        rows = [r for r in rows if str(r.get("category")) == str(category)]
+    rows = rows[-5:]
+    if not rows:
+        return "No measurements have been saved yet."
+    lines = [
+        f"{r.get('name')} ({r.get('category')}): known_value={r.get('known_value')}, "
+        f"is_reference={bool(r.get('is_reference'))}"
+        for r in rows
+    ]
+    return "Most recent measurements:\n" + "\n".join(lines)
+
+
+@tool
+def get_calibration_status() -> str:
+    """
+    Return the instrument's current calibration and maintenance status:
+    calibration health, scans since last baseline, dark reference age,
+    baseline drift percent, sensor health, LED hours and firmware version.
+    """
+    health = compute_calibration_health()
+    return (
+        f"Calibration status: {health['status']}. "
+        f"Scans since last baseline: {health['scan_counter']}. "
+        f"Dark reference age: {health['dark_reference_age_hours']} h. "
+        f"Baseline drift: {health['baseline_drift_percent']}%. "
+        f"Sensor health: {health['sensor_health']}. "
+        f"LED hours: {health['led_hours']}. "
+        f"Firmware: {health['firmware_version']}."
+    )
+
+
+@tool
+def get_active_model_metrics(category: str) -> str:
+    """
+    Return the training metrics (R^2, RMSE, MAE, sample count) of the
+    active prediction model for a given category (Water, Coffee, Milk
+    or Other), if one has been trained.
+    """
+    model = get_active_model(category)
+    if not model:
+        return f"No trained model is active for category '{category}'."
+    return (
+        f"Active model for {category}: R^2={model.get('r2')}, "
+        f"RMSE={model.get('rmse')}, MAE={model.get('mae')}, "
+        f"trained on {model.get('n_samples')} samples."
+    )
+
+
+llm = LargeLanguageModel(
+    system_prompt=(
+        "You are the on-device analysis assistant for an edge AI spectrophotometer. "
+        "Answer questions about the instrument, its measurements, calibration status, "
+        "and trained prediction models. Use the provided tools to look up real data "
+        "instead of guessing. Keep answers concise."
+    ),
+    tools=[get_recent_measurements, get_calibration_status, get_active_model_metrics],
+).with_memory(
+    max_messages=10,
+    persistence=SQLMessagePersistence(sql_store=db, thread_id="analysis-assistant"),
+)
 
 
 # Arduino MCU → Python MPU
@@ -527,19 +578,16 @@ async def handle_chat_send(sid, data=None):
         return
 
     category = (data or {}).get("category") or "Water"
-    context = build_context(category)
-    llm_available = False
-    if llm_available:
-        answer = "LLM execution is available here; context would be sent to the local model."
-    else:
-        answer = (
-            "Local LLM is not available in this runtime. Based on current context: "
-            f"{len(context['recent_measurements'])} recent scans are available, the active reference profile is {context['active_profile'].get('category') if context['active_profile'] else 'unset'}, "
-            f"and the active model is {context['model_metrics'].get('category') if context['model_metrics'] else 'unset'}. "
-            f"The current calibration status is {context['health_status']} and drift is {context['drift_percent']}%. "
-            "Question: " + question
-        )
-    await ui.sio.emit('chatResponse', {"content": answer, "context": context}, room=sid)
+    prompt = f"[Current analysis category: {category}]\n{question}"
+
+    try:
+        loop = asyncio.get_event_loop()
+        answer = await loop.run_in_executor(None, llm.chat, prompt)
+    except Exception as e:
+        print("chat_send LLM call failed:", e)
+        answer = f"Local LLM error: {e}"
+
+    await ui.sio.emit('chatResponse', {"content": answer}, room=sid)
 
 
 @ui.sio.on('get_maintenance_status')

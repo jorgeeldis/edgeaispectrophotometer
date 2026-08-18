@@ -46,17 +46,17 @@ socket.on("sendBaseline", (baselineData) => {
   document.getElementById("readout-title").textContent = "Peak Amplitude";
   document.getElementById("rd-max").textContent =
     maxValue.toFixed(4) +
-    "mW @ " +
+    " counts @ " +
     wavelengths[baselineData.indexOf(maxValue)] +
     " nm";
   document.getElementById("rd-min").textContent =
     minValue.toFixed(4) +
-    "mW @ " +
+    " counts @ " +
     wavelengths[baselineData.indexOf(minValue)] +
     " nm";
-  document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "mW";
+  document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + " counts";
   document.getElementById("rd-noise").textContent =
-    noiseValue.toFixed(4) + " mW";
+    noiseValue.toFixed(4) + " counts";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
@@ -99,17 +99,17 @@ socket.on("sendSingleScan", (singleScanData) => {
   document.getElementById("readout-title").textContent = "Peak Absorbance";
   document.getElementById("rd-max").textContent =
     maxValue.toFixed(4) +
-    "dB @ " +
+    "AU @ " +
     wavelengths[singleScanData.indexOf(maxValue)] +
     " nm";
   document.getElementById("rd-min").textContent =
     minValue.toFixed(4) +
-    "dB @ " +
+    "AU @ " +
     wavelengths[singleScanData.indexOf(minValue)] +
     " nm";
-  document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "dB";
+  document.getElementById("rd-mean").textContent = meanValue.toFixed(4) + "AU";
   document.getElementById("rd-noise").textContent =
-    noiseValue.toFixed(4) + " dB";
+    noiseValue.toFixed(4) + " AU";
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
@@ -478,7 +478,7 @@ const RETRO_LAYOUT_BASELINE = {
     tickfont: { size: 14 },
   },
   yaxis: {
-    title: { text: "AMPLITUDE (mW/cm)", font: { size: 14 } },
+    title: { text: "RAW COUNTS", font: { size: 14 } },
     gridcolor: "rgba(143,169,139,.16)",
     zerolinecolor: "rgba(143,169,139,.3)",
     linecolor: "rgba(143,169,139,.4)",
@@ -506,7 +506,7 @@ const RETRO_LAYOUT = {
     tickfont: { size: 14 },
   },
   yaxis: {
-    title: { text: "ABSORBANCE (dB)", font: { size: 14 } },
+    title: { text: "ABSORBANCE (AU)", font: { size: 14 } },
     gridcolor: "rgba(143,169,139,.16)",
     zerolinecolor: "rgba(143,169,139,.3)",
     linecolor: "rgba(143,169,139,.4)",

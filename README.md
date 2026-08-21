@@ -433,15 +433,7 @@ Full build documentation includes:
 - Validation experiments
 - Engineering limitations
 
-See the Hackster project page for the complete step-by-step build guide.
-
----
-
-## License
-
-This project is open source.
-
-See [`LICENSE`](LICENSE) for the terms covering the source code, hardware files, CAD files, and documentation.
+See the Hackster project page in the about section of this repository for the complete step-by-step build guide.
 
 ---
 

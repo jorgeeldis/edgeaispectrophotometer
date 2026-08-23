@@ -12,7 +12,11 @@ import random
 import sys
 from datetime import datetime, timedelta
 
-DB = sys.argv[1] if len(sys.argv) > 1 else "edgeaispectrophotometer.db"
+# Positional DB path, ignoring flags like --clear so "seed_data.py --clear"
+# (no explicit path) correctly falls back to the default filename instead of
+# treating "--clear" itself as the path.
+_positional = [a for a in sys.argv[1:] if not a.startswith("--")]
+DB = _positional[0] if _positional else "edgeaispectrophotometer.db"
 CLEAR = "--clear" in sys.argv
 
 if not os.path.exists(DB):

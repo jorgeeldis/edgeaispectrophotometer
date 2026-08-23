@@ -548,13 +548,15 @@ async def handle_sanity_plot(sid, data=None):
         await ui.sio.emit('sanityPlotResponse', {"success": False, "reason": "Not enough valid levels after filtering malformed spectra."}, room=sid)
         return
 
+    model = get_active_model(category)
+
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     slope, intercept = np.polyfit(x, y, 1)
     y_pred = slope * x + intercept
     ss_res = np.sum((y - y_pred) ** 2)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
-    r2 = 1.0 if ss_tot == 0 else float(1 - ss_res / ss_tot)
+    r2 = model.get('r2')
     print("this is R2: ", r2)
 
     reason = None if r2 > 0.99 else "Sanity plot drifted below R² > 0.99; check the optical path before training."

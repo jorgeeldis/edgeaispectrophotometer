@@ -1,9 +1,9 @@
 name: edgeaispectrophotometer
 include:
-- /var/lib/arduino-app-cli/assets/0.11.0/services/arduino/llamacpp/service_compose.unoq.yaml
+- /var/lib/arduino-app-cli/assets/0.12.0/services/arduino/llamacpp/service_compose.unoq.yaml
 services:
   main:
-    image: ghcr.io/arduino/app-bricks/python-apps-base:0.11.0
+    image: ghcr.io/arduino/app-bricks/python-apps-base:0.12.0
     depends_on:
       llamacpp-models-runner:
         condition: service_started
@@ -19,8 +19,14 @@ services:
       target: /run/udev
       read_only: true
     - type: bind
+      source: /run/user/1000/pipewire-0
+      target: /run/user/1000/pipewire-0
+    - type: bind
       source: /run/arduino-router.sock
       target: /run/arduino-router.sock
+    - type: bind
+      source: /run/arduino-cloud-connector
+      target: /run/arduino-cloud-connector
     - type: bind
       source: /dev/leds/builtin/led1_b
       target: /dev/leds/builtin/led1_b
@@ -66,6 +72,7 @@ services:
       BOARD_NAME: unoq
       HOST_IP: 192.168.0.16
       MODELS_PATH: /var/lib/arduino-app-cli/models
+      XDG_RUNTIME_DIR: /run/user/1000
     logging:
       driver: json-file
       options:

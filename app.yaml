@@ -1,8 +1,9 @@
 name: edge-ai-spectrophotometer
-description: ""
+description: The Edge-AI Spectrophotometer is a compact optical measurement system designed to explore decentralized quality-control workflows using affordable
 ports: []
 bricks:
 - arduino:web_ui: {}
 - arduino:dbstorage_sqlstore: {}
-- arduino:llm: {}
+- arduino:llm:
+    model: llamacpp:gemma-3-1b-it-Q4_0
 icon: 🧬

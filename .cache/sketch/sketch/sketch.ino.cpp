@@ -9,11 +9,6 @@ SfeAS7343ArdI2C mySensor;
 // Buffer used by the library to store all raw sensor channels
 uint16_t myData[ksfAS7343NumChannels];
 
-// Marker values sent to Python before and after the spectral data.
-// These make it easier for the Python application to detect the
-// beginning and end of a complete sample.
-const float MARKER = 0.0001;
-
 // Spectral channels that will be read from the AS7343
 const sfe_as7343_channel_t channels[] = {
     CH_PURPLE_F1_405NM,
@@ -41,13 +36,13 @@ float values[12];
 
 
 // Stops program execution if a critical error occurs.
-#line 42 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+#line 37 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 void halt(const char *message);
-#line 54 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+#line 49 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 void setup();
-#line 97 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+#line 94 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 void loop();
-#line 42 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
+#line 37 "/home/arduino/ArduinoApps/edgeaispectrophotometer/sketch/sketch.ino"
 void halt(const char *message)
 {
     Serial.println(message);
@@ -85,7 +80,9 @@ void setup()
     if (!mySensor.powerOn())
         halt("Failed to power on device.");
 
-    // Configure the sensor to automatically read all spectral channels
+    // AutoSmux cycles the sensor's internal multiplexer across all channel
+    // groups on its own, so a single readSpectraDataFromSensor() call
+    // returns every channel without manually stepping the SMUX ourselves.
     if (!mySensor.setAutoSmux(AUTOSMUX_18_CHANNELS))
         halt("Failed to configure AutoSmux.");
 
@@ -105,7 +102,9 @@ void setup()
 // Continuously acquires spectral data and sends it to Python.
 void loop()
 {
-    // Turn off the onboard LED before taking measurements
+    // Illumination comes from the optical chamber's own light source, not
+    // the sensor's onboard LED — leaving it on would bleed extra light into
+    // every reading, so it's switched off before each acquisition.
     mySensor.ledOff();
 
     // Trigger a new spectral acquisition
@@ -134,22 +133,15 @@ void loop()
         Serial.println(values[i]);
     }
 
-    // -------------------------------------------------------------------------
     // Send data to the Python application through Arduino Router Bridge.
-    //
-    // Data Format:
-    // MARKER,
-    // F1, F2, FZ, F3, F4, F5,
-    // FY, FXL, F6, F7, F8, NIR,
-    // MARKER
-    // -------------------------------------------------------------------------
+    // "record_sensor_samples" is a name, not a function pointer — it has to
+    // match the name Bridge.provide() registers on the Python side, and the
+    // twelve arguments have to line up positionally with that function's
+    // parameters.
     Bridge.notify(
-        "record_sensor_samples",
-        MARKER,
-        values[0], values[1], values[2], values[3],
+        "record_sensor_samples", values[0], values[1], values[2], values[3],
         values[4], values[5], values[6], values[7],
-        values[8], values[9], values[10], values[11],
-        MARKER);
+        values[8], values[9], values[10], values[11]);
 
     Serial.println("Sent to Python!");
     Serial.println("--------------------------------");

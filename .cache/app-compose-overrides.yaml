@@ -15,3 +15,4 @@ services:
       BOARD_NAME: unoq
       HOST_IP: 192.168.0.16
       MODELS_PATH: /var/lib/arduino-app-cli/models
+      XDG_RUNTIME_DIR: /run/user/1000

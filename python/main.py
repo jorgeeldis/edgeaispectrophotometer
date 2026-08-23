@@ -216,6 +216,34 @@ def predict_with_model(model, spectrum):
     return pred, round(conf, 4)
 
 
+def compute_dev_status(known_value, means, stds, arr, model, pred):
+    """
+    Deviation-from-reference-profile is the right check for a true unknown:
+    it answers "does this look like a good sample of this category". It is
+    the WRONG check for a labeled calibration/training sample — a 50%
+    dilution is *supposed* to sit far from the 0% reference, so scoring it
+    against the profile flags legitimate training data as REJECT.
+
+    So: labeled samples with an active model are scored on how far the
+    model's own prediction misses their declared known_value, scaled by the
+    model's own RMSE (its own notion of "one unit of expected error").
+    Everything else falls back to the reference-profile z-score. Either way
+    the same PASS/ATTENTION/REJECT thresholds apply to whichever "dev" ends
+    up meaning in context.
+    """
+    if known_value is not None and pred is not None and model:
+        rmse = max(float(model.get("rmse", 0.0) or 0.0), 1e-6)
+        dev = round(abs(float(pred) - float(known_value)) / rmse, 2)
+    elif means is not None and stds is not None:
+        z = (arr - means) / stds
+        dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
+    else:
+        dev = None
+
+    status = None if dev is None else "PASS" if dev < 2 else "ATTENTION" if dev < 3 else "REJECT"
+    return dev, status
+
+
 # Tools the on-device LLM can call to look up real instrument data
 # instead of guessing at measurements, calibration, or model quality.
 
@@ -758,11 +786,11 @@ async def handle_export_report(sid, data=None):
             arr = normalize_spectrum(json.loads(m.get("raw_counts", "[]")))
             dev = pred = conf = None
             if arr is not None:
-                if means is not None and stds is not None:
-                    z = (arr - means) / stds
-                    dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
                 if model:
                     pred, conf = predict_with_model(model, arr)
+                # Same logic as the Analysis tab (compute_dev_status) — keeps
+                # exported reports consistent with what's shown live.
+                dev, _ = compute_dev_status(m.get("known_value"), means, stds, arr, model, pred)
             measurements.append({
                 "name": m.get("name"),
                 "created_at": m.get("created_at"),
@@ -871,15 +899,12 @@ async def handle_analysis(sid, data=None):
         arr = normalize_spectrum(json.loads(m.get("raw_counts", "[]")))
         if arr is None:
             continue
-        dev = None
-        if means is not None and stds is not None:
-            z = (arr - means) / stds
-            dev = round(float(np.sqrt(np.mean(z ** 2))), 2)
-
         pred = None
         conf = None
         if model:
             pred, conf = predict_with_model(model, arr)
+
+        dev, status = compute_dev_status(m.get("known_value"), means, stds, arr, model, pred)
 
         out.append({
             "id": m["id"],
@@ -888,7 +913,7 @@ async def handle_analysis(sid, data=None):
             "dev": dev,
             "pred": None if pred is None else round(float(pred), 3),
             "conf": None if conf is None else round(float(conf), 3),
-            "status": (None if dev is None else "PASS" if dev < 2 else "ATTENTION" if dev < 3 else "REJECT"),
+            "status": status,
             "is_reference": int(m.get("is_reference", 0)),
         })
 

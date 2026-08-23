@@ -555,6 +555,7 @@ async def handle_sanity_plot(sid, data=None):
     ss_res = np.sum((y - y_pred) ** 2)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
     r2 = 1.0 if ss_tot == 0 else float(1 - ss_res / ss_tot)
+    print("this is R2: ", r2)
 
     reason = None if r2 > 0.99 else "Sanity plot drifted below R² > 0.99; check the optical path before training."
     await ui.sio.emit('sanityPlotResponse', {

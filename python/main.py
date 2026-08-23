@@ -469,7 +469,11 @@ async def handle_build_reference(sid, data=None):
 
     existing = [dict(r) for r in db.read("reference_profile") if str(r.get("category")) == str(category)]
     for row in existing:
-        db.store("reference_profile", {**row, "is_active": 0}, row.get("id"))
+        # Drop "id" from the payload — it's already the row's own primary key,
+        # so re-asserting it here (on top of passing it as the update target
+        # below) risks store() treating this as an insert with a duplicate id.
+        row_id = row.pop("id", None)
+        db.store("reference_profile", {**row, "is_active": 0}, row_id)
 
     profile_id = db.store("reference_profile", {
         "created_at": datetime.datetime.utcnow().isoformat(),
@@ -580,7 +584,11 @@ async def handle_train_model(sid, data=None):
 
     existing = [dict(r) for r in db.read("model") if str(r.get("category")) == str(category)]
     for row in existing:
-        db.store("model", {**row, "is_active": 0}, row.get("id"))
+        # Same reasoning as the reference_profile deactivation in
+        # handle_build_reference: drop "id" from the payload so it's never
+        # re-asserted alongside the update-target id below.
+        row_id = row.pop("id", None)
+        db.store("model", {**row, "is_active": 0}, row_id)
 
     model_id = db.store("model", {
         "created_at": datetime.datetime.utcnow().isoformat(),

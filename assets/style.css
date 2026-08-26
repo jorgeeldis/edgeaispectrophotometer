@@ -66,6 +66,13 @@ body.retro p { font-size: 12px; line-height: 1.5; color: var(--ink); }
     inset 0 1px 0 rgba(255,255,255,.9),
     inset 0 -3px 0 rgba(0,0,0,.12),
     0 10px 26px rgba(60,52,38,.35);
+  /* max-height is a fixed budget tuned for the 7-inch panel, not a cap that
+     shrinks its own content — a tab whose content grows past it (e.g.
+     Analysis once the Sanity Plot chart appears) needs somewhere for the
+     overflow to go. Scrolling inside the housing keeps its own shape/size
+     fixed instead of the content visually breaking out of it. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Corner panel screws */

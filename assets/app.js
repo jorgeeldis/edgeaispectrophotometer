@@ -565,10 +565,10 @@ const wavelengths = [
 ];
 
 const scanSettings = {
-  name: "Sample 1",
+  name: "Coffee Unknown",
   gain: 1,
   isRef: "No",
-  category: "Other",
+  category: "Coffee",
   known_value: null,
 };
 

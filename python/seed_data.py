@@ -338,6 +338,71 @@ add_real(
     2.5, False, 82
 )
 
+# --- Synthetic augmentation, anchored to the two real rows above ---
+# Two real dilution levels aren't enough for Build Reference (needs 5
+# replicates) or Train Model (needs 15 samples across 4+ levels). These
+# rows are linearly interpolated/extrapolated between the two real spectra
+# above, with noise added, purely so the full pipeline can be exercised
+# end to end before more real dilution levels get measured. They're named
+# "Coffee_sim_*" specifically so they stay visually distinguishable from
+# the two genuinely real rows — don't present these as lab measurements
+# in the write-up, and swap them out for real replicates as you collect
+# more physical samples.
+#
+# Important nuance for Flow D demos: since this interpolation is built
+# FROM the two real anchors, rescanning either real physical sample and
+# expecting a near-perfect match isn't a blind test — the "model" already
+# encodes almost exactly that spectrum as one of its training targets.
+# It's a legitimate demonstration that the pipeline works, not evidence of
+# real-world prediction accuracy. For that, Phase 5's Flow D needs an
+# independently-measured sample the training set has never seen.
+
+_KV0 = [0.00, 0.00, 0.00, 0.00, 2.67, 0.00, 2.31, 2.09, 1.81, 1.50, 2.21, 0.00]
+_KV25 = [0.00, 0.00, 2.66, 0.00, 2.66, 2.47, 1.94, 1.66, 1.36, 1.20, 1.92, 2.15]
+
+# A stored 0.00 means that channel saturated (see main.py's
+# SATURATION_CEILING_AU), not "no absorbance" — substitute the ceiling
+# before interpolating, or the interpolation would treat a fully opaque
+# channel as fully transparent instead.
+_KV0_CORRECTED = [4.0 if v == 0.0 else v for v in _KV0]
+_KV25_CORRECTED = [4.0 if v == 0.0 else v for v in _KV25]
+
+
+def _coffee_interp(kv, noise=0.03):
+    out = []
+    for i in range(N_CH):
+        base = (
+            _KV0_CORRECTED[i]
+            + (_KV25_CORRECTED[i] - _KV0_CORRECTED[i]) * (kv / 2.5)
+        )
+        v = base + random.gauss(0, noise)
+        out.append(round(max(0.0, min(4.0, v)), 2))
+    return out
+
+
+# 5 reference replicates at the pure/undiluted end (known_value 0)
+for i in range(5):
+    add_real(
+        f"Coffee_sim_ref_{i+1:02d}", "Coffee",
+        _coffee_interp(0.0), 0.0, True, 84 + i * 2
+    )
+
+# Labeled training samples across 5 levels (spanning and slightly beyond
+# the two real anchors), 3 replicates each = 15 samples, randomized order
+# like the other series (avoids correlating concentration with drift).
+_coffee_order = [
+    (lvl, rep)
+    for lvl in (0.0, 1.25, 2.5, 3.75, 5.0)
+    for rep in "abc"
+]
+random.shuffle(_coffee_order)
+
+for k, (lvl, rep) in enumerate(_coffee_order):
+    add_real(
+        f"Coffee_sim_{lvl}_{rep}", "Coffee",
+        _coffee_interp(lvl), float(lvl), False, 94 + k * 2
+    )
+
 
 # ------------------------------------------------ MILK
 # 0-50% added water

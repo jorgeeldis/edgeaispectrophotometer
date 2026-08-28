@@ -207,7 +207,10 @@ def predict_with_model(model, spectrum):
     spec = np.asarray(spectrum, dtype=float)
     if spec.size < coeffs.size:
         spec = np.pad(spec, (0, coeffs.size - spec.size), constant_values=0.0)
-    pred = float(np.dot(coeffs[:spec.size], spec[:coeffs.size]) + intercept)
+    # known_value (concentration/dilution amount) has no valid negative
+    # range in this domain — a negative result here is a linear-model
+    # extrapolation artifact, not a real prediction, so the sign is dropped.
+    pred = abs(float(np.dot(coeffs[:spec.size], spec[:coeffs.size]) + intercept))
     # Confidence is a simple heuristic derived from training RMSE, not a
     # statistical prediction interval — a tighter-fitting model (lower RMSE)
     # reports higher confidence, floored so a very noisy fit never claims 0%

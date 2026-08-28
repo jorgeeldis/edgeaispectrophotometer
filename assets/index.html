@@ -13,9 +13,22 @@ SPDX-License-Identifier: MPL-2.0
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EDGE-AI SPECTROPHOTOMETER</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Bootstrap 4.0.0 CSS — MIT licensed. Vendored locally for offline
+       operation; original CDN reference kept below for documentation.
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
-    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-  <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script>
+    integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
+  <link rel="stylesheet" href="bootstrap.min.css" />
+
+  <!-- Plotly 3.6.0 — MIT licensed. Vendored locally for offline operation.
+  <script src="https://cdn.plot.ly/plotly-3.6.0.min.js" charset="utf-8"></script> -->
+  <script src="plotly-3.6.0.min.js" charset="utf-8"></script>
+
+  <!-- jQuery 3.2.1 slim, Popper 1.12.9, and Bootstrap 4.0.0's JS are NOT
+       loaded locally below — confirmed unused. app.js never calls $()/jQuery,
+       and the Settings modal uses data-bs-* attributes (Bootstrap 5 syntax),
+       which Bootstrap 4's JS doesn't recognize at all. These three were only
+       ever inert dead weight; kept here as comments for history/reference.
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
     integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
     crossorigin="anonymous"></script>
@@ -24,7 +37,7 @@ SPDX-License-Identifier: MPL-2.0
     crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
-    crossorigin="anonymous"></script>
+    crossorigin="anonymous"></script> -->
 </head>
 
 <body class="retro">
@@ -485,15 +498,25 @@ SPDX-License-Identifier: MPL-2.0
     <script src="libs/socket.io.min.js"></script>
     <script src="libs/arduino.js"></script>
     <script src="app.js"></script>
+
+    <!-- Bootstrap 5.3.8 bundle (includes Popper 2 internally) — MIT
+         licensed. This is what actually drives the Settings modal
+         (data-bs-* attributes). Vendored locally for offline operation.
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-      crossorigin="anonymous"></script>
+      crossorigin="anonymous"></script> -->
+    <script src="bootstrap.bundle.min.js"></script>
+
+    <!-- Standalone @popperjs/core 2.11.8 and the non-bundle Bootstrap 5.3.8
+         build are NOT loaded locally below — both are redundant once the
+         bundle above is loaded (it already includes Popper 2 internally).
+         Kept as comments for history/reference only.
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
       integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
       crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
       integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
-      crossorigin="anonymous"></script>
+      crossorigin="anonymous"></script> -->
 
 </body>
 

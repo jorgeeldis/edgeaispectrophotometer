@@ -9,6 +9,7 @@ import json
 import datetime
 import asyncio
 import os
+import re
 import traceback
 from html import escape as _esc
 import pandas
@@ -421,6 +422,34 @@ async def frontend_request_single_scan(sid, data=None):
     await ui.sio.emit('sendSingleScan', lastScan)
 
 
+def _dedupe_name(name):
+    """
+    If `name` already exists among saved measurements, prepend a number so
+    this row gets a distinct label instead of silently colliding with an
+    earlier sample saved under the same name (e.g. re-scanning "Coffee
+    Unknown" without remembering to rename it in Settings first).
+    """
+    if not name:
+        return name
+
+    existing = [str(r.get("name") or "") for r in db.read("measurement")]
+    pattern = re.compile(rf"^(\d+) {re.escape(name)}$")
+
+    max_n = None
+    for n in existing:
+        if n == name:
+            max_n = max(max_n or 1, 1)
+            continue
+        m = pattern.match(n)
+        if m:
+            max_n = max(max_n or 1, int(m.group(1)))
+
+    if max_n is None:
+        return name
+
+    return f"{max_n + 1} {name}"
+
+
 async def save_measurement(sid, data):
 
     print("save_measurement received data:", data)
@@ -433,7 +462,7 @@ async def save_measurement(sid, data):
     try:
         payload = {
             "created_at": data.get("created_at") or datetime.datetime.utcnow().isoformat(),
-            "name": data.get("name"),
+            "name": _dedupe_name(data.get("name")),
             "category": data.get("category"),
             "raw_counts": json.dumps(data.get("raw_counts")),
             "saturated": int(data.get("saturated")),

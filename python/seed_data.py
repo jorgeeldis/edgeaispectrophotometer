@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
-# seed_data.py — inject synthetic test rows into an existing .db
+# seed_data.py — inject test rows into an existing .db
 #
 # python3 seed_data.py             append
 # python3 seed_data.py --clear     delete all rows first
+#
+# Water/Milk/Other are synthetic (add()/counts_for(), normalized 0-1 scale).
+# Coffee is real hardware data (add_real(), raw log10 absorbance, unbounded)
+# — see the COFFEE section below. Never mix the two conventions within one
+# category; that's exactly what add_real() exists to keep separate.
 
 import json
 import os
@@ -205,6 +210,41 @@ def add(name, cat, absv, known, is_ref, minutes):
     n += 1
 
 
+def add_real(name, cat, raw_counts, known, is_ref, minutes):
+    """
+    Insert a REAL hardware measurement verbatim, no synthetic transform.
+    raw_counts are already-computed log10(baseline/sample) absorbance values
+    straight off the device — a different scale from add()/counts_for()'s
+    synthetic 0-1 normalized convention used elsewhere in this file. Never
+    mix the two within the same category.
+    """
+    global n
+
+    cur.execute(
+        """
+        INSERT INTO measurement
+        (created_at, name, category, baseline_id, raw_counts,
+         saturated, is_reference, known_value)
+        VALUES (?,?,?,?,?,?,?,?)
+        """,
+        (
+            (
+                t0 + timedelta(minutes=minutes)
+            ).isoformat(timespec="seconds"),
+
+            name,
+            cat,
+            bid,
+            json.dumps(raw_counts),
+            0,
+            int(is_ref),
+            known
+        )
+    )
+
+    n += 1
+
+
 def series(
     cat,
     shape,
@@ -278,28 +318,24 @@ series(
 )
 
 
-# ------------------------------------------------ COFFEE
-# Solids, 0-10 g/L
-# Broad absorption rising toward blue
+# ------------------------------------------------ COFFEE (REAL HARDWARE DATA)
+# Actual AS7343 absorbance readings from real espresso dilutions — not
+# synthetic. known_value here tracks mL of water added to a 10mL coffee
+# base, so 0 = pure/undiluted (the concentrated end), the opposite of the
+# "0 = reference/blank" convention used for the synthetic categories below.
+# Add more real dilution points here as they're measured; do not run them
+# through counts_for() or mix them with synthetic Coffee data.
 
-series(
-    "Coffee",
+add_real(
+    "Coffee100mL", "Coffee",
+    [0.00, 0.00, 0.00, 0.00, 2.67, 0.00, 2.31, 2.09, 1.81, 1.50, 2.21, 0.00],
+    0.0, False, 80
+)
 
-    [
-        1.00, 0.94, 0.82, 0.68,
-        0.47, 0.35, 0.33, 0.24,
-        0.17, 0.12, 0.06, 0.03
-    ],
-
-    ref_abs=0.006,
-    ref_n=6,
-
-    levels=(2, 4, 6, 8, 10),
-
-    peak_abs=1.60,
-    max_level=10,
-
-    t_start=80
+add_real(
+    "Coffee075mL", "Coffee",
+    [0.00, 0.00, 2.66, 0.00, 2.66, 2.47, 1.94, 1.66, 1.36, 1.20, 1.92, 2.15],
+    2.5, False, 82
 )
 
 
@@ -423,13 +459,16 @@ print(
 
 
 # ------------------------------------------------ VERIFY RANGE
+# Only the synthetic categories (add()/counts_for()) are expected to be
+# normalized to [0,1] — Coffee is real absorbance data and is unbounded
+# above, so it's intentionally excluded from this check.
 
-print("\nChecking stored value ranges...")
+print("\nChecking synthetic value ranges (Water/Milk/Other, 0-1 convention)...")
 
 valid = True
 
 for r in cur.execute(
-    "SELECT id, name, raw_counts FROM measurement"
+    "SELECT id, name, raw_counts FROM measurement WHERE category != 'Coffee'"
 ):
     values = json.loads(r["raw_counts"])
 
@@ -441,7 +480,12 @@ for r in cur.execute(
         valid = False
 
 if valid:
-    print("OK: all measurement spectral values are between 0 and 1.")
+    print("OK: all synthetic measurement spectral values are between 0 and 1.")
+
+print(
+    "Note: Coffee rows are real hardware absorbance readings (log10 scale, "
+    "unbounded above) — intentionally not range-checked above."
+)
 
 
 conn.close()

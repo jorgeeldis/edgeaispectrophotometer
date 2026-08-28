@@ -60,23 +60,33 @@ socket.on("sendBaseline", (baselineData) => {
   document.getElementById("peak-abs").textContent = maxValue.toFixed(4);
 });
 
-socket.on("sendSingleScan", (singleScanData) => {
-  console.log("Received single scan from Arduino:", singleScanData);
+socket.on("sendSingleScan", (payload) => {
+  console.log("Received single scan from Arduino:", payload);
+
+  // Backend now sends { values, saturated } instead of a bare array, so a
+  // saturated channel (fully opaque sample) can be flagged instead of
+  // silently misreported as 0 absorbance.
+  const singleScanData = payload?.values;
 
   // Guard clause: Make sure we actually received valid array data
   if (!singleScanData || !Array.isArray(singleScanData)) {
-    console.error("Expected an array but received:", singleScanData);
+    console.error("Expected { values: [...] } but received:", payload);
     return;
   }
 
   // Store the real sensor array into your state
   scanState.lastScan = singleScanData;
+  scanState.saturated = !!payload.saturated;
   saveDataBtn.disabled = false;
   maxValue = Math.max(...singleScanData);
   minValue = Math.min(...singleScanData);
   meanValue = singleScanData.reduce((a, b) => a + b, 0) / singleScanData.length;
   noiseValue = 0;
-  setScanStatus("Single scan captured from hardware!");
+  setScanStatus(
+    scanState.saturated
+      ? "Single scan captured — one or more channels saturated (sample may be too concentrated/opaque for this gain)."
+      : "Single scan captured from hardware!"
+  );
 
   // Redraw your Plotly graph with the real sensor data array
   Plotly.react(
@@ -657,7 +667,7 @@ function saveData() {
     category: scanSettings.category,
     baseline_id: null,
     raw_counts: scanState.lastScan,
-    saturated: 0,
+    saturated: scanState.saturated ? 1 : 0,
     is_reference: isReference ? 1 : 0,
     // A reference sample is always the 0% point of its dilution series.
     // For anything else, known_value stays whatever Settings left it —

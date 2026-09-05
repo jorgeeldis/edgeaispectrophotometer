@@ -435,6 +435,9 @@ Full build documentation includes:
 
 See the Hackster project page in the about section of this repository for the complete step-by-step build guide.
 
+Check out the video for a step by step: [Edge-AI Spectrophotometer: Industrial Quality Control
+ Youtube Video](https://www.youtube.com/watch?v=SfvVCilvs7o)
+
 ---
 
 ## Author
